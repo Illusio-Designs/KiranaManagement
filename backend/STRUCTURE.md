@@ -88,20 +88,22 @@ Kirana.Domain/
  │   ├─ Payment.cs
  │   ├─ SalesReturn.cs
  │   └─ Customer.cs
- ├─ Orders/
- │   ├─ Storefront.cs
- │   ├─ Cart.cs
- │   ├─ Order.cs
- │   ├─ OrderLine.cs
+ ├─ Orders/                       # marketplace: parent order spans stores (Order/Cart are platform-level)
+ │   ├─ Cart.cs                   # platform-level; lines reference StoreId + ProductId
+ │   ├─ CartLine.cs
+ │   ├─ Order.cs                  # PARENT — one order number, one payment, customer + address
+ │   ├─ StoreOrder.cs            # per-store PART of a parent order (tenant-scoped: StoreId)
+ │   ├─ OrderLine.cs             # belongs to a StoreOrder
  │   ├─ OrderStatusHistory.cs
- │   └─ DeliveryZone.cs
- ├─ Delivery/
+ │   └─ StoreOrderStatusHistory.cs
+ ├─ Delivery/                     # driver pool + assignment are platform-level
  │   ├─ Driver.cs
  │   ├─ DriverAvailability.cs
- │   ├─ DeliveryAssignment.cs
+ │   ├─ DeliveryAssignment.cs     # assigns a PARENT order to one driver
+ │   ├─ PickupTask.cs             # one per contributing store: items to collect + collected status
  │   ├─ DeliveryStatusHistory.cs
  │   ├─ ProofOfDelivery.cs
- │   └─ CODCollection.cs
+ │   └─ CODCollection.cs          # total for order, allocated per StoreOrder
  └─ Accounting/
      ├─ Account.cs               # chart of accounts
      ├─ JournalEntry.cs
@@ -144,8 +146,9 @@ Kirana.Application/
  ├─ Inventory/         (stock ledger, adjustments — PRD §5.3)
  ├─ Purchasing/        (PO, GRN, bills — PRD §5.4)
  ├─ Sales/             (POS billing, returns — PRD §5.5)
- ├─ Orders/            (online orders, order manager — PRD §5.6–5.7)
- ├─ Delivery/          (assignment, status, POD, COD — PRD §5.8)
+ ├─ Marketplace/       (unified catalog aggregation, multi-store cart, checkout, order SPLIT into StoreOrders — PRD §5.6)
+ ├─ Orders/            (parent order + per-store parts, order manager — PRD §5.7)
+ ├─ Delivery/          (assign parent order, multi-store PickupTasks, status, POD, COD — PRD §5.8)
  ├─ Accounting/        (postings, GST, reports — PRD §5.9)
  ├─ Reporting/         (dashboards, analytics — PRD §5.10)
  ├─ Notifications/     (templates, dispatch — PRD §5.11)

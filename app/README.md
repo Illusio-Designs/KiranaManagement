@@ -3,10 +3,12 @@
 The customer-facing and driver-facing apps. Both consume the same
 [backend](../backend) Web API.
 
-- **Customer Online-Order App** — browse a store, cart, checkout, pay, and track
-  delivery. (PRD §5.6, §5.7)
-- **Driver App** — drivers see assigned orders, navigate, update delivery status,
-  and capture proof of delivery / COD. (PRD §5.8)
+- **Customer Online-Order App (marketplace)** — browse a **unified catalog across
+  all stores**, add items from **multiple stores to one cart**, pay **once**, and
+  track a **single order** (one order number). (PRD §5.6–5.7)
+- **Driver App** — a driver gets **one order** with a **multi-store pickup list**,
+  collects items from each store, delivers them together, and captures proof of
+  delivery / COD. (PRD §5.8)
 
 **Suggested approach:** start as responsive **PWAs** for fastest delivery, then
 move to native / .NET MAUI later. Push notifications for order and delivery

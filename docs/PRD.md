@@ -19,11 +19,17 @@
 KiranaManagement is a **multi-tenant SaaS platform** that lets any grocery / kirana store **self-register**, get **approved by a platform administrator**, and then run their entire business from one place: **inventory, purchasing, in-store sales (POS), online storefront sales, order management, delivery, and accounting**.
 
 The platform ships as **three connected surfaces** around a shared backend:
-1. **Customer Online-Order App** — customers browse a store's catalog, order, pay, and track delivery.
-2. **Driver App** — delivery drivers receive assigned orders, navigate, and update delivery status with proof of delivery.
-3. **Store Management Dashboard** — store owners/staff run operations (catalog, inventory, purchase, POS, order fulfilment, delivery dispatch, accounting, reports).
+1. **Customer Online-Order App** — a **single marketplace**: customers browse a **unified catalog aggregated across all stores' live inventory**, add items **from any number of stores into one cart**, and place **one order with one order number**. They order from the *app/platform*, not store-by-store.
+2. **Driver App** — a driver is assigned that single order, **collects the items from every store involved in it, consolidates them, and delivers them together to the customer under the same order number**.
+3. **Store Management Dashboard** — store owners/staff run operations (catalog, inventory, purchase, POS, order fulfilment, delivery dispatch, accounting, reports). For any marketplace order, each store sees and fulfils **only its own portion** (its pick-list) of that shared order.
 
-Each store operates as an isolated tenant with its own data, staff, catalog, and books, while a central **Super Admin** governs onboarding, approvals, billing, and platform-wide health.
+### 1.1.1 Marketplace Ordering Model (key concept)
+- One customer order (**one order number**) may contain items sourced from **multiple stores**.
+- Internally the order is split into per-store **fulfilment parts** (sub-orders / pick-lists), one per contributing store, so each store prepares only its items and each store's sales, stock, and platform fee post to that store.
+- A **single delivery** consolidates all parts: the driver does a **multi-pickup run** (one stop per store), then **one drop** to the customer, all tracked under the same parent order number.
+- The customer experiences one basket, one payment, one order, one delivery — the multi-store split is invisible to them.
+
+Each store operates as an isolated tenant with its own data, staff, catalog, and books, while a central **Super Admin** governs onboarding, approvals, fees, and platform-wide health. Marketplace orders are **platform-level** and span stores; each store is exposed only to its own part.
 
 ### 1.2 Problem Statement
 Small and mid-sized grocery stores today run on paper registers, disconnected spreadsheets, or point solutions that don't talk to each other. As a result they:
@@ -90,9 +96,9 @@ Advertising is a distinct capability with its own console, targeting, and billin
 - Product catalog & inventory management (batches, expiry, units).
 - Purchase management (suppliers, purchase orders, goods receipt, supplier bills).
 - In-store Sales / POS (billing, discounts, multiple payment modes, returns).
-- **Customer Online-Order App** — storefront browse, cart, checkout, pay, order tracking (delivery/pickup).
-- Order management (unified queue for online + phone orders, fulfilment states).
-- **Driver App & delivery dispatch** — assign orders to drivers, live status, proof of delivery.
+- **Customer Online-Order App (marketplace)** — unified catalog across all stores, multi-store cart, single checkout/payment, one order number, order tracking.
+- Order management — one **parent order** split into per-store **parts (pick-lists)**; each store fulfils only its part.
+- **Driver App & delivery dispatch** — assign one order to a driver for **multi-store pickup + single delivery**, live status, proof of delivery.
 - Accounting (ledgers, GST, receivables/payables, P&L, reports).
 - Notifications (email/SMS/WhatsApp/in-app/push).
 - Platform Super Admin console.
@@ -124,8 +130,8 @@ Advertising is a distinct capability with its own console, targeting, and billin
 | **Cashier / POS Operator** | Bills customers at the counter. | Fast billing, returns, cash handling. |
 | **Inventory / Stock Clerk** | Manages stock and receiving. | Stock in/out, goods receipt, stock counts. |
 | **Accountant** | Manages the books. | Ledgers, GST, receivables/payables, reconciliation. |
-| **Online Customer** | Buys from a store's storefront/app. | Browse, order, pay, track delivery. |
-| **Delivery Driver** | Delivers orders for a store. | See assigned orders, navigate, update status, capture proof of delivery, track earnings. |
+| **Online Customer** | Shops the marketplace app across all stores. | One unified catalog, one cart spanning multiple stores, one order/payment, one delivery, order tracking. |
+| **Delivery Driver** | Fulfils a marketplace order end-to-end. | See the assigned order, a **multi-store pickup list** (which items from which store), navigate store-to-store, collect & consolidate, deliver together, capture proof of delivery, track earnings. |
 
 ### 3.2 Role → Permission Matrix (high level)
 | Capability | Super Admin | Owner | Manager | Cashier | Stock Clerk | Accountant |
@@ -170,21 +176,23 @@ Advertising is a distinct capability with its own console, targeting, and billin
 3. Supplier **bill** is entered/attached → payable created, stock increased.
 4. Payment recorded against the bill.
 
-### 4.4 Online Order (Customer App)
-1. Customer browses the store's storefront/app, adds items to cart, checks out (delivery or pickup slot).
-2. Pays online or chooses cash-on-delivery.
-3. Order lands in the store's **Order Manager** as **New**.
-4. Staff **accepts → picks/packs → ready**.
-5. For delivery orders, staff **assign a driver** (see §4.5); for pickup, customer is notified it's ready.
-6. Sale posts to inventory & accounts on fulfilment; customer gets live status updates and can track the driver.
+### 4.4 Marketplace Order (Customer App)
+1. Customer opens the app and browses the **unified catalog across all nearby stores' live inventory**; each item shows which store it comes from.
+2. Customer adds items to **one cart** — items may come from **several stores** — and checks out.
+3. Pays **once** (online or cash-on-delivery) for the whole cart.
+4. The platform creates **one order with one order number** and **splits it into per-store parts** (one pick-list per contributing store).
+5. Each contributing store sees only **its part** in its Order Manager and **accepts → picks/packs → ready**.
+6. Once all parts are ready (or ready enough to start the run), the platform **assigns one driver** for the whole order (see §4.5).
+7. Each store's items post to that store's inventory & accounts; the platform fee accrues per store. The customer gets live status for the single order and can track the driver.
 
-### 4.5 Delivery (Driver App)
-1. Store staff assign a **Ready** order to an available driver from the dashboard.
-2. Driver receives a **push notification** and sees the order in their app (items, address, amount to collect if COD).
-3. Driver **accepts → picks up from store → out for delivery** (navigates via map).
-4. Customer sees live status (and optional driver location).
-5. Driver **marks delivered** with **proof of delivery** (OTP, photo, or signature); for COD, records cash collected.
-6. Order closes; delivery + any COD collection post to accounting; driver's completed-delivery count/earnings update.
+### 4.5 Delivery — Multi-Store Pickup (Driver App)
+1. The platform assigns the marketplace order to an available driver; the driver gets a **push notification**.
+2. The driver's app shows **one order** with a **multi-stop pickup list**: each store's name, address, and the exact items to collect there, plus the customer's delivery address and COD amount (if any).
+3. Driver navigates store-to-store and **collects each store's items**, marking each store's pickup **collected/verified** as they go (all under the same order number).
+4. When all stores are collected, the order becomes **Out for Delivery**; driver makes **one drop** to the customer.
+5. Customer sees live status (and optional driver location) for the single order.
+6. Driver **marks delivered** with **proof of delivery** (OTP, photo, or signature); for COD, records total cash collected for the whole order.
+7. Order closes; each store's portion + any COD posts to accounting; the driver's completed-delivery count/earnings update.
 
 ---
 
@@ -236,37 +244,42 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **FR-5.8 (P1)** Held/parked bills; day-open/day-close cash reconciliation (Z-report).
 - **FR-5.9 (P2)** Customer profiles & basic loyalty points.
 
-### 5.6 Online Sales (Storefront)
-- **FR-6.1 (P0)** Auto-provisioned storefront per approved store (unique URL/subdomain), sharing the same catalog & stock.
-- **FR-6.2 (P0)** Customer browse, search, cart, and checkout (delivery or pickup).
-- **FR-6.3 (P0)** Online payments (UPI/card/netbanking via gateway) + Cash on Delivery.
-- **FR-6.4 (P0)** Real-time stock availability reflected online (no overselling).
-- **FR-6.5 (P1)** Delivery zones, delivery charges, minimum order value, and slot selection.
-- **FR-6.6 (P1)** Promotions/coupons applicable online.
-- **FR-6.7 (P2)** Customer accounts with order history and reorder.
-- **FR-6.8 (P2)** Basic storefront theming/branding per store.
+### 5.6 Online Sales — Marketplace (Customer App)
+- **FR-6.1 (P0)** **Unified catalog** aggregating **all approved, active stores' live inventory** into one browsable marketplace; each product shows its source store, price, and availability.
+- **FR-6.2 (P0)** **Multi-store cart**: the customer adds items from **any number of stores** into a single cart.
+- **FR-6.3 (P0)** Browse, search, and filter across stores (by category, price, store, availability, distance).
+- **FR-6.4 (P0)** **Single checkout** for the whole cart: **one payment** (UPI/card/netbanking via gateway, or COD) covering items from all stores.
+- **FR-6.5 (P0)** On checkout, create **one parent order with one order number** and automatically **split it into per-store parts** (sub-orders / pick-lists).
+- **FR-6.6 (P0)** Real-time, per-store stock availability (no overselling); items from an out-of-stock/closed store are handled gracefully at cart/checkout.
+- **FR-6.7 (P1)** Serviceability by delivery area (only show stores that can deliver to the customer's location); delivery charge, minimum order value, and slot selection at the **order** level.
+- **FR-6.8 (P1)** Promotions/coupons (platform-wide and store/brand-sponsored).
+- **FR-6.9 (P2)** Customer accounts with order history and one-tap reorder across stores.
 
-### 5.7 Order Management
-- **FR-7.1 (P0)** Unified order queue for online + manual (phone/WhatsApp) orders.
-- **FR-7.2 (P0)** Order lifecycle: `New → Accepted → Packed → Ready → Out-for-delivery/Pickup → Delivered/Completed → Cancelled/Returned`.
-- **FR-7.3 (P0)** Fulfilment posts to inventory and accounting.
-- **FR-7.4 (P1)** Customer notifications on each status change.
-- **FR-7.5 (P1)** Partial fulfilment / item substitution & refunds.
-- **FR-7.6 (P0)** Assign/re-assign a **Ready** delivery order to a driver from the dashboard (see §5.8).
+### 5.7 Order Management (Parent Order + Per-Store Parts)
+- **FR-7.1 (P0)** A **parent order** (single order number) holds one or more **store parts**; each store part is the unit each store fulfils.
+- **FR-7.2 (P0)** **Store-part queue** in each store's dashboard showing only that store's items for the order.
+- **FR-7.3 (P0)** Store-part lifecycle: `New → Accepted → Packed → Ready` (per store).
+- **FR-7.4 (P0)** **Parent-order lifecycle**: `Placed → (parts being prepared) → Ready-for-Pickup → Assigned → Out-for-Delivery → Delivered/Completed → Cancelled/Returned`, derived from its parts + delivery state.
+- **FR-7.5 (P0)** Each store part posts **its own** items to **its own** inventory & accounting; platform fee accrues per store part.
+- **FR-7.6 (P0)** Assign the **whole parent order** to a single driver for a **multi-store pickup + single delivery** (see §5.8).
+- **FR-7.7 (P1)** Customer notifications on parent-order status changes (customer never sees the internal split).
+- **FR-7.8 (P1)** Item unavailability at pick time: substitution, partial fulfilment, or per-item refund — reflected on the parent order.
+- **FR-7.9 (P1)** Manual (phone/WhatsApp) orders can also be captured and, if needed, span stores the same way.
 
-### 5.8 Driver App & Delivery Management
-- **FR-8.1 (P0)** Driver onboarding: store adds a driver (name, phone, vehicle); driver logs into the Driver App.
+### 5.8 Driver App & Delivery Management (Multi-Store Pickup)
+- **FR-8.1 (P0)** Driver onboarding: platform/store adds a driver (name, phone, vehicle); driver logs into the Driver App.
 - **FR-8.2 (P0)** Driver availability toggle (online/offline) and view of orders assigned to them.
-- **FR-8.3 (P0)** Assigned-order detail: items, customer name & address, contact, COD amount to collect.
-- **FR-8.4 (P0)** Delivery status flow in-app: `Assigned → Accepted → Picked-up → Out-for-delivery → Delivered` (+ `Failed/Returned`).
-- **FR-8.5 (P0)** **Proof of delivery**: delivery OTP, photo, and/or signature capture.
-- **FR-8.6 (P0)** COD handling: record cash collected; reconcile driver cash against the store.
-- **FR-8.7 (P0)** Push notifications to the driver on new assignment / changes.
-- **FR-8.8 (P1)** Map & navigation to the customer address; optional live driver location shared with customer.
-- **FR-8.9 (P1)** Driver dashboard: today's deliveries, completed count, and earnings/collections summary.
-- **FR-8.10 (P1)** Failed-delivery reasons and re-attempt / return-to-store handling.
-- **FR-8.11 (P2)** Multi-order batch pickup and simple sequencing.
-- **FR-8.12 (P2)** Driver ratings/feedback from customers.
+- **FR-8.3 (P0)** **One assigned order = a multi-stop pickup list**: for each contributing store, show store name, address, and the exact items to collect there; plus the customer's delivery address and total COD to collect.
+- **FR-8.4 (P0)** **Per-store pickup tracking**: driver marks each store's items **collected/verified**; the order can't go out for delivery until **all** stores are collected (or explicitly handled).
+- **FR-8.5 (P0)** Delivery status flow: `Assigned → Accepted → Collecting (per-store) → All-Collected → Out-for-delivery → Delivered` (+ `Failed/Returned`).
+- **FR-8.6 (P0)** **Proof of delivery**: delivery OTP, photo, and/or signature at the single drop.
+- **FR-8.7 (P0)** COD handling: record **total** cash collected for the whole order; reconcile driver cash; allocate collection back to each store part.
+- **FR-8.8 (P0)** Push notifications to the driver on new assignment / changes.
+- **FR-8.9 (P1)** Map & navigation with a suggested **store-to-store pickup route** then customer drop; optional live driver location shared with customer.
+- **FR-8.10 (P1)** Driver dashboard: today's deliveries, stores visited, completed count, and earnings/collections summary.
+- **FR-8.11 (P1)** Failed / partial pickup handling (a store can't fulfil): proceed with available items, flag the missing part, trigger refund/substitution on the parent order.
+- **FR-8.12 (P2)** Batching multiple parent orders and pickup-route optimization across them.
+- **FR-8.13 (P2)** Driver ratings/feedback from customers.
 
 ### 5.9 Accounting
 - **FR-9.1 (P0)** Auto-posting of sales, purchases, returns, and payments to a double-entry ledger.
@@ -336,27 +349,33 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 ## 7. Data Model (High-Level Entities)
 - **Platform**: `SuperAdmin`, `PlatformFeeConfig`, `FeeLedger` (accrued platform fees), `Settlement`, `Payout`, `AuditLog`.
 - **Advertising**: `Advertiser` (store or brand), `Brand`, `AdCampaign`, `AdCreative`, `AdPlacement`, `AdImpression`, `AdClick`, `AdvertiserWallet`.
-- **Store/Tenant**: `Store`, `StoreSettings`, `User`, `Role`, `Permission`.
+- **Store/Tenant**: `Store`, `StoreSettings`, `StoreServiceArea` (delivery serviceability / zone), `User`, `Role`, `Permission`.
 - **Catalog/Inventory**: `Product`, `Category`, `UnitOfMeasure`, `Batch`, `StockLedger`, `StockAdjustment`.
 - **Purchasing**: `Supplier`, `PurchaseOrder`, `GoodsReceipt`, `PurchaseInvoice`, `PurchaseReturn`.
 - **Sales**: `SalesInvoice`, `SalesLine`, `Payment`, `SalesReturn`, `Customer`.
-- **Online/Orders**: `Storefront`, `Cart`, `Order`, `OrderLine`, `OrderStatusHistory`, `DeliveryZone`.
-- **Delivery/Driver**: `Driver`, `DriverAvailability`, `DeliveryAssignment`, `DeliveryStatusHistory`, `ProofOfDelivery`, `CODCollection`.
+- **Marketplace/Orders** (platform-level, span stores):
+  - `Cart`, `CartLine` (each line references a `store_id` + `product_id`).
+  - `Order` (**parent** — the single order number, customer, delivery address, total payment).
+  - `StoreOrder` (**per-store part** of a parent order — belongs to one `store_id`; the unit each store fulfils and the unit that posts to that store's books).
+  - `OrderLine` (belongs to a `StoreOrder`).
+  - `OrderStatusHistory`, `StoreOrderStatusHistory`.
+  - `Payment` (at the **parent-order** level, one payment for the whole cart).
+- **Delivery/Driver**: `Driver`, `DriverAvailability`, `DeliveryAssignment` (assigns a **parent order** to a driver), `PickupTask` (**one per store** on that order — items to collect at a store + collected status), `DeliveryStatusHistory`, `ProofOfDelivery`, `CODCollection` (total for the order, allocated per `StoreOrder`).
 - **Accounting**: `Account` (CoA), `JournalEntry`, `LedgerPosting`, `TaxRate`, `Receivable`, `Payable`.
 - **Notifications**: `NotificationTemplate`, `NotificationLog`.
 
-> Every tenant-scoped entity carries a `store_id`; all queries are tenant-filtered.
+> **Tenancy note:** `Order`, `Cart`, `DeliveryAssignment`, and the `Driver` pool are **platform-level** (they span stores). `StoreOrder`, `OrderLine`, `PickupTask`, and all catalog/inventory/sales/accounting rows carry a `store_id` and are tenant-filtered — so each store sees only **its own part** of a shared order, never the whole basket or other stores' items.
 
 ---
 
 ## 8. System Architecture (Conceptual)
 - **Clients (four surfaces over one backend)**:
   - **Store Management Dashboard** — web/mobile app for POS + operations + delivery dispatch.
-  - **Customer Online-Order App** — customer PWA/mobile app (storefront, checkout, tracking).
-  - **Driver App** — mobile app for delivery drivers (assignments, navigation, proof of delivery).
+  - **Customer Online-Order App** — customer PWA/mobile app: **unified marketplace** catalog, multi-store cart, single checkout, order tracking.
+  - **Driver App** — mobile app for drivers (multi-store pickup list, navigation, proof of delivery).
   - **Super Admin Console** — platform governance.
-- **Backend**: Multi-tenant API services grouped by domain (Auth/Tenancy, Catalog/Inventory, Purchasing, Sales/POS, Online/Orders, **Delivery/Dispatch**, Accounting, Notifications).
-- **Data**: **MySQL** relational database with tenant isolation (row-level `store_id`, enforced globally), object storage for documents/images.
+- **Backend**: API services grouped by domain (Auth/Tenancy, Catalog/Inventory, Purchasing, Sales/POS, **Marketplace/Orders**, **Delivery/Dispatch**, Accounting, Monetization/Advertising, Notifications). A **Marketplace service** aggregates all stores' catalog/stock and orchestrates order splitting into per-store parts.
+- **Data**: **MySQL** relational database. **Tenant-scoped** rows (catalog, inventory, `StoreOrder`, sales, accounting) carry `store_id` and are globally filtered; **platform-level** rows (`Order`, `Cart`, `Driver`, `DeliveryAssignment`, advertising) span stores. Object storage for documents/images.
 - **Integrations**: Payment gateway (UPI/cards), SMS/WhatsApp/email providers, GST/e-invoicing (later).
 - **Cross-cutting**: AuthN/AuthZ (RBAC + MFA), audit logging, background jobs (notifications, sync, reports), offline sync for POS.
 
@@ -410,6 +429,9 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 | Financial posting errors | Wrong books, trust loss | Double-entry, idempotency, reconciliation, audits. |
 | Tenant data leakage | Severe/compliance | Strict tenant isolation, tests, security reviews. |
 | Overselling online vs offline | Customer dissatisfaction | Single shared real-time stock ledger. |
+| One store in a multi-store order can't fulfil | Delayed/partial order | Per-store part status, substitution/partial-refund flow, driver flags missing part at pickup. |
+| Multi-store pickup adds delivery time/cost | Slow delivery, thin margins | Serviceability by area, suggested pickup route, later batching/route optimization. |
+| Splitting/attribution errors across stores | Wrong store books & fees | `StoreOrder` is the posting unit; per-part accounting and per-part fee accrual with tests. |
 | Driver COD cash leakage | Financial loss | Per-driver COD tracking, mandatory reconciliation, POD required to close orders. |
 | Failed / disputed deliveries | Refund cost, distrust | Proof of delivery (OTP/photo), failed-reason capture, re-attempt/return flow. |
 | Scope creep | Delayed launch | Strict P0/P1/P2 prioritization and phasing. |
@@ -429,6 +451,11 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 
 ## 13. Glossary
 - **Kirana**: A neighbourhood grocery store.
+- **Marketplace**: The unified customer app where all stores' inventory is browsable and shoppable together.
+- **Parent Order**: The single customer order (one order number) that may span multiple stores.
+- **Store Order / Part**: The portion of a parent order belonging to one store — the unit that store fulfils and books.
+- **Pickup Task**: A driver's collection stop at one store for a given parent order.
+- **Multi-Store Pickup**: A driver collecting items from several stores for one order, then making a single delivery.
 - **Tenant**: An isolated store account on the platform.
 - **POS**: Point of Sale (in-store billing).
 - **GRN**: Goods Receipt Note.

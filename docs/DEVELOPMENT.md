@@ -158,7 +158,12 @@ automatically so a developer can never forget it.
    ```
 4. Set `StoreId` automatically on insert by overriding `SaveChanges`.
 
-> **Platform-level** entities (Store, SuperAdmin, PlatformFeeConfig, Advertiser/Brand) are **not**
+> **Platform-level** entities span stores and are **not** tenant-filtered:
+> Store, SuperAdmin, PlatformFeeConfig, Advertiser/Brand, and the **marketplace
+> order graph** — `Order` (parent), `Cart`, `Driver`, `DeliveryAssignment`.
+> Their tenant-owned children **are** filtered: `StoreOrder`, `OrderLine`, and
+> `PickupTask` each carry a `StoreId`, so a store sees only its part of a shared
+> order. In short, these entities are **not**
 > tenant-filtered. The Super Admin console operates across all stores.
 
 ---
@@ -174,8 +179,8 @@ Create the entities from **PRD §7** in `Kirana.Domain`. Suggested build order
 | Catalog & stock | `Product`, `Category`, `UnitOfMeasure`, `Batch`, `StockLedger`, `StockAdjustment` |
 | Purchasing | `Supplier`, `PurchaseOrder`, `GoodsReceipt`, `PurchaseInvoice`, `PurchaseReturn` |
 | Sales / POS | `SalesInvoice`, `SalesLine`, `Payment`, `SalesReturn`, `Customer` |
-| Online / orders | `Storefront`, `Cart`, `Order`, `OrderLine`, `OrderStatusHistory`, `DeliveryZone` |
-| Delivery / driver | `Driver`, `DriverAvailability`, `DeliveryAssignment`, `DeliveryStatusHistory`, `ProofOfDelivery`, `CODCollection` |
+| Marketplace / orders | `Cart`, `CartLine`, `Order` (parent), `StoreOrder` (per-store part), `OrderLine`, `OrderStatusHistory`, `StoreOrderStatusHistory` |
+| Delivery / driver | `Driver`, `DriverAvailability`, `DeliveryAssignment` (parent order), `PickupTask` (per store), `DeliveryStatusHistory`, `ProofOfDelivery`, `CODCollection` |
 | Accounting | `Account`, `JournalEntry`, `LedgerPosting`, `TaxRate`, `Receivable`, `Payable` |
 | Notifications | `NotificationTemplate`, `NotificationLog` |
 
@@ -241,17 +246,23 @@ sync.
    - Catalog & inventory CRUD + stock ledger.
    - Purchase order → goods receipt → supplier bill (stock goes up).
    - POS sale endpoint (stock goes down, invoice created).
-3. **Phase 2 — Online**
-   - Storefront read APIs, cart, checkout, order creation.
+3. **Phase 2 — Online Marketplace**
+   - **Unified catalog** read API aggregating all active stores' products/stock.
+   - **Multi-store cart** (lines carry `StoreId`), single checkout, **one payment**.
+   - On checkout: create the **parent `Order`** and **split** it into per-store `StoreOrder`s (this split is the heart of the model — test it hard).
    - Payment gateway integration (start with a sandbox), COD.
-   - Order Manager status flow.
-4. **Phase 3 — Delivery**
-   - Driver entity + Driver App APIs, assignment, status flow, POD, COD reconcile.
+   - Order Manager: each store sees & advances only its `StoreOrder`; parent status derives from parts.
+4. **Phase 3 — Delivery (multi-store pickup)**
+   - Driver entity + Driver App APIs; assign the **parent order** to one driver.
+   - Generate a **`PickupTask` per contributing store**; driver marks each store collected before "out for delivery".
+   - Single delivery, POD, COD total reconcile (allocated per `StoreOrder`).
    - SignalR push to drivers; live tracking.
 5. **Phase 4 — Finance**
-   - Double-entry postings on every sale/purchase/payment; GST & core reports.
-6. **Phase 5 — Scale**
-   - Multi-outlet, offline POS sync, analytics, route batching.
+   - Double-entry postings **per `StoreOrder`** (each store's books) + POS/purchases; GST & core reports.
+6. **Phase 5 — Monetize**
+   - Platform-fee accrual per `StoreOrder`, settlements/payouts; advertiser accounts, ad campaigns/placements, ad billing.
+7. **Phase 6 — Scale**
+   - Multi-outlet, offline POS sync, analytics, pickup-route batching/optimization.
 
 ---
 
