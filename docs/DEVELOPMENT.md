@@ -34,19 +34,26 @@ dotnet tool install --global dotnet-ef
 
 ## 2. Recommended Solution Structure
 
-Use a clean, layered structure so the domains in the PRD map to folders. One
-solution, multiple projects:
+The repository is split into three top-level folders — **`backend/`**,
+**`frontend/`**, and **`app/`**. The ASP.NET Core solution lives under
+**`backend/`** with a clean, layered structure so the PRD domains map to
+projects:
 
 ```
-KiranaManagement.sln
- ├─ src/
- │   ├─ Kirana.Api            (ASP.NET Core Web API  -> startup, controllers, SignalR hubs)
- │   ├─ Kirana.Application    (services, DTOs, interfaces, business rules)
- │   ├─ Kirana.Domain         (entities/models, enums — the tables from PRD §7)
- │   └─ Kirana.Infrastructure (EF Core DbContext, migrations, repositories, external integrations)
- └─ tests/
-     ├─ Kirana.UnitTests
-     └─ Kirana.IntegrationTests
+KiranaManagement/
+ ├─ backend/          ← the ASP.NET Core solution (this guide)
+ │   ├─ KiranaManagement.sln
+ │   ├─ src/
+ │   │   ├─ Kirana.Api            (ASP.NET Core Web API -> startup, controllers, SignalR hubs)
+ │   │   ├─ Kirana.Application    (services, DTOs, interfaces, business rules)
+ │   │   ├─ Kirana.Domain         (entities/models, enums — the tables from PRD §7)
+ │   │   └─ Kirana.Infrastructure (EF Core DbContext, migrations, repositories, integrations)
+ │   └─ tests/
+ │       ├─ Kirana.UnitTests
+ │       └─ Kirana.IntegrationTests
+ ├─ frontend/         ← Store Management Dashboard + Super Admin console (web)
+ ├─ app/              ← Customer Online-Order App + Driver App (mobile/PWA)
+ └─ docs/             ← PRD and this guide
 ```
 
 Dependency direction: **Api → Application → Domain**, and **Infrastructure → Application/Domain**.
@@ -54,7 +61,7 @@ Domain depends on nothing.
 
 ### Create it
 ```bash
-mkdir KiranaManagement && cd KiranaManagement
+cd backend                       # the .NET solution lives here
 dotnet new sln -n KiranaManagement
 
 dotnet new webapi   -n Kirana.Api            -o src/Kirana.Api
@@ -179,7 +186,7 @@ Keep money as `decimal(18,2)`, use `Guid` primary keys, and add `CreatedAt` /
 
 ## 7. Migrations (EF Core → MySQL)
 
-From the repo root:
+From the **`backend/`** folder:
 ```bash
 # create the first migration
 dotnet ef migrations add InitialCreate \

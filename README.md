@@ -13,6 +13,15 @@ The platform ships as three connected surfaces over a shared backend:
 - **Store Management Dashboard** — run catalog, inventory, purchasing, POS,
   order fulfilment, delivery dispatch, accounting, and reports.
 
+## Repository Structure
+```
+KiranaManagement/
+ ├─ backend/    ASP.NET Core Web API — shared backend for all clients
+ ├─ frontend/   Store Management Dashboard + Super Admin console (web)
+ ├─ app/        Customer Online-Order App + Driver App (mobile/PWA)
+ └─ docs/       PRD and development guide
+```
+
 ## Tech Stack
 - **Backend:** ASP.NET Core (C#, .NET 8 LTS) Web API
 - **Database:** MySQL 8 (Entity Framework Core, Pomelo provider)
