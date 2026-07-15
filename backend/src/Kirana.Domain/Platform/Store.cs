@@ -15,9 +15,20 @@ public class Store : BaseEntity
     public string Phone { get; set; } = string.Empty;
 
     public string? AddressLine { get; set; }
-    public string? City { get; set; }
     public string? Pincode { get; set; }
+
+    // Location (country → state → city cascade). Ids reference Geo reference
+    // data; names are denormalized for convenient display.
+    public Guid? CountryId { get; set; }
+    public Guid? StateId { get; set; }
+    public Guid? CityId { get; set; }
+    public string? CountryName { get; set; }
+    public string? StateName { get; set; }
+    public string? CityName { get; set; }
+
+    // Tax / statutory identifiers (India)
     public string? Gstin { get; set; }
+    public string? Pan { get; set; }
 
     public StoreStatus Status { get; set; } = StoreStatus.Pending;
 

@@ -48,13 +48,21 @@ Kirana.Domain/
  │       ├─ PaymentMode.cs        # Cash, UPI, Card, Wallet, StoreCredit, COD
  │       └─ PaymentStatus.cs
  ├─ Platform/                     # NOT tenant-scoped
- │   ├─ Store.cs
+ │   ├─ Store.cs                  # incl. GSTIN + PAN + country/state/city
+ │   ├─ StoreDocument.cs          # KYC uploads (onboarding)
  │   ├─ StoreSettings.cs
  │   ├─ PlatformFeeConfig.cs      # commission % and/or flat per-order fee
  │   ├─ FeeLedger.cs              # accrued platform fees per order
  │   ├─ Settlement.cs
  │   ├─ Payout.cs
  │   └─ AuditLog.cs
+ ├─ Geo/                          # seeded reference data (registration cascade)
+ │   ├─ Country.cs
+ │   ├─ State.cs
+ │   └─ City.cs
+ ├─ Customers/                    # marketplace shoppers (phone-OTP auth)
+ │   ├─ Customer.cs
+ │   └─ OtpCode.cs
  ├─ Advertising/                  # NOT tenant-scoped (brands span stores)
  │   ├─ Advertiser.cs             # a store or a brand
  │   ├─ Brand.cs
@@ -195,9 +203,12 @@ Kirana.Infrastructure/
  │   ├─ Sms/       (TwilioSmsSender.cs : ISmsSender)
  │   ├─ Email/     (SmtpEmailSender.cs : IEmailSender)
  │   ├─ Whatsapp/
+ │   ├─ Otp/       (DevOtpSender.cs : IOtpSender — dev logs the code; MSG91/SMS later)
  │   ├─ Delivery/  (PorterProvider.cs / BorzoProvider.cs / ShiprocketProvider.cs : IDeliveryProvider — see docs/DELIVERY_INTEGRATIONS.md)
  │   ├─ Maps/      (GoogleMapsProvider.cs / OlaMapsProvider.cs : IMapProvider — see docs/DRIVER_APP_INTEGRATIONS.md)
  │   └─ Push/      (FcmPushSender.cs / ApnsPushSender.cs : IPushSender)
+ ├─ Storage/                        # LocalFileStorage.cs : IFileStorage (blob/S3 later)
+ ├─ Identity/ … + GoogleTokenValidator.cs (IGoogleTokenValidator), JwtTokenService (+ customer tokens)
  ├─ Jobs/                          # Hangfire background jobs (notifications, sync, reports)
  └─ DependencyInjection.cs         # AddInfrastructure() — registers DbContext + services
 ```

@@ -15,3 +15,6 @@ secrets.json
 
 # EF / SQLite dev artifacts
 *.db
+
+# Uploaded files (local file storage)
+uploads/

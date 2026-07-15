@@ -97,12 +97,14 @@ static async Task BootstrapDatabaseAsync(WebApplication app)
         var db = services.GetRequiredService<AppDbContext>();
         await db.Database.EnsureCreatedAsync();
 
+        await GeoSeedData.SeedAsync(db);
+
         var hasher = services.GetRequiredService<IPasswordHasher>();
         var cfg = services.GetRequiredService<IConfiguration>();
         var adminEmail = cfg["Seed:AdminEmail"] ?? "superadmin@kirana.local";
         var adminPassword = cfg["Seed:AdminPassword"] ?? "Admin@12345";
         await SeedData.SeedAsync(db, hasher, adminEmail, adminPassword);
-        logger.LogInformation("Database ready; SuperAdmin seeded ({Email}).", adminEmail);
+        logger.LogInformation("Database ready; geo + SuperAdmin seeded ({Email}).", adminEmail);
     }
     catch (Exception ex)
     {

@@ -1,6 +1,8 @@
 using Kirana.Application.Common.Interfaces;
 using Kirana.Infrastructure.Identity;
+using Kirana.Infrastructure.Integrations.Otp;
 using Kirana.Infrastructure.Persistence;
+using Kirana.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +15,7 @@ public static class DependencyInjection
         this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<GoogleAuthOptions>(configuration.GetSection(GoogleAuthOptions.SectionName));
 
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Missing connection string 'Default'.");
@@ -27,6 +30,11 @@ public static class DependencyInjection
 
         services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IFileStorage, LocalFileStorage>();
+        services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
+
+        // OTP delivery: dev logs the code; swap for a real SMS provider in production.
+        services.AddSingleton<IOtpSender, DevOtpSender>();
 
         return services;
     }

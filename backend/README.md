@@ -42,14 +42,27 @@ On first run (Development) the app **creates the schema** (`EnsureCreated`) and
 (DEVELOPMENT.md §7).
 
 **Try the flow (Swagger or curl):**
-1. `POST /api/auth/register-store` — a store self-registers → status `Pending`.
-2. `POST /api/auth/login` as the **SuperAdmin** → copy the JWT.
-3. `GET /api/admin/stores/pending` then `POST /api/admin/stores/{id}/approve`
-   (send the SuperAdmin token) → store becomes `Active`.
-4. `POST /api/auth/login` as the **store owner** (only works once approved) → JWT
-   carrying `store_id`.
-5. With the owner token, `POST /api/products` then `GET /api/products` — you only
+1. `GET /api/geo/countries` → `…/{countryId}/states` → `…/states/{stateId}/cities`
+   (seeded India data) to get ids for the location cascade.
+2. `POST /api/auth/register-store` — a store self-registers with **GSTIN, PAN**
+   and `countryId/stateId/cityId` → status `Pending`.
+3. `POST /api/stores/{storeId}/documents` (multipart `file` + `documentType`) —
+   upload KYC docs during onboarding.
+4. `POST /api/auth/login` as the **SuperAdmin** → copy the JWT.
+5. `GET /api/admin/stores/pending`, review docs at
+   `GET /api/admin/stores/{id}/documents`, then `POST /api/admin/stores/{id}/approve`.
+6. `POST /api/auth/login` (or **`POST /api/auth/google`** with a Google ID token)
+   as the **store owner** → JWT carrying `store_id`.
+7. With the owner token, `POST /api/products` then `GET /api/products` — you only
    ever see your own store's products (tenant isolation).
+
+**Customer (marketplace) auth — phone OTP:**
+- `POST /api/customer-auth/request-otp` `{ "phone": "+9199..." }` — in dev the code
+  is **printed to the console** (dev OTP sender; wire a real SMS provider later).
+- `POST /api/customer-auth/verify-otp` `{ "phone": "...", "code": "123456" }` → customer JWT.
+
+**Config for optional integrations:** set `Google:ClientId` to enable Google
+Sign-In; `Storage:BasePath` controls where uploaded documents are saved.
 
 Run tests: `dotnet test`
 

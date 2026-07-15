@@ -2,6 +2,8 @@ using System.Reflection;
 using Kirana.Application.Common.Interfaces;
 using Kirana.Domain.Catalog;
 using Kirana.Domain.Common;
+using Kirana.Domain.Customers;
+using Kirana.Domain.Geo;
 using Kirana.Domain.Identity;
 using Kirana.Domain.Platform;
 using Microsoft.EntityFrameworkCore;
@@ -19,8 +21,16 @@ public class AppDbContext : DbContext, IAppDbContext
     }
 
     public DbSet<Store> Stores => Set<Store>();
+    public DbSet<StoreDocument> StoreDocuments => Set<StoreDocument>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Product> Products => Set<Product>();
+
+    public DbSet<Country> Countries => Set<Country>();
+    public DbSet<State> States => Set<State>();
+    public DbSet<City> Cities => Set<City>();
+
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

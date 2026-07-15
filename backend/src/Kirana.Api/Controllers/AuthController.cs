@@ -37,4 +37,13 @@ public class AuthController : ControllerBase
         var response = await _auth.LoginAsync(request, ct);
         return Ok(response);
     }
+
+    /// <summary>Store-owner sign-in with Google (send the Google ID token).</summary>
+    [AllowAnonymous]
+    [HttpPost("google")]
+    public async Task<ActionResult<AuthResponse>> Google(GoogleLoginRequest request, CancellationToken ct)
+    {
+        var response = await _auth.LoginWithGoogleAsync(request, ct);
+        return Ok(response);
+    }
 }

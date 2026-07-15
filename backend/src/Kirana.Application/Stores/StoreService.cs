@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Kirana.Application.Common.Exceptions;
 using Kirana.Application.Common.Interfaces;
 using Kirana.Application.Stores.Dtos;
@@ -10,6 +11,8 @@ namespace Kirana.Application.Stores;
 
 public class StoreService : IStoreService
 {
+    private static readonly Regex PanRegex = new("^[A-Z]{5}[0-9]{4}[A-Z]$", RegexOptions.Compiled);
+
     private readonly IAppDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
 
@@ -27,6 +30,10 @@ public class StoreService : IStoreService
         if (emailTaken)
             throw AppException.Conflict("An account with this email already exists.");
 
+        var pan = request.Pan?.Trim().ToUpperInvariant();
+        if (!string.IsNullOrEmpty(pan) && !PanRegex.IsMatch(pan))
+            throw new AppException("PAN must be 10 characters in the format AAAAA9999A.");
+
         var store = new Store
         {
             Name = request.StoreName.Trim(),
@@ -34,11 +41,13 @@ public class StoreService : IStoreService
             Email = email,
             Phone = request.Phone.Trim(),
             AddressLine = request.AddressLine?.Trim(),
-            City = request.City?.Trim(),
             Pincode = request.Pincode?.Trim(),
-            Gstin = request.Gstin?.Trim(),
+            Gstin = request.Gstin?.Trim().ToUpperInvariant(),
+            Pan = pan,
             Status = StoreStatus.Pending
         };
+
+        await ResolveLocationAsync(store, request, ct);
 
         var owner = new User
         {
@@ -55,6 +64,33 @@ public class StoreService : IStoreService
         await _db.SaveChangesAsync(ct);
 
         return Map(store);
+    }
+
+    private async Task ResolveLocationAsync(Store store, RegisterStoreRequest request, CancellationToken ct)
+    {
+        if (request.CountryId is Guid countryId)
+        {
+            var country = await _db.Countries.FirstOrDefaultAsync(c => c.Id == countryId, ct)
+                          ?? throw AppException.NotFound("Selected country not found.");
+            store.CountryId = country.Id;
+            store.CountryName = country.Name;
+        }
+
+        if (request.StateId is Guid stateId)
+        {
+            var state = await _db.States.FirstOrDefaultAsync(s => s.Id == stateId, ct)
+                        ?? throw AppException.NotFound("Selected state not found.");
+            store.StateId = state.Id;
+            store.StateName = state.Name;
+        }
+
+        if (request.CityId is Guid cityId)
+        {
+            var city = await _db.Cities.FirstOrDefaultAsync(c => c.Id == cityId, ct)
+                       ?? throw AppException.NotFound("Selected city not found.");
+            store.CityId = city.Id;
+            store.CityName = city.Name;
+        }
     }
 
     public async Task<StoreDto> GetByIdAsync(Guid storeId, CancellationToken ct = default)
@@ -114,6 +150,7 @@ public class StoreService : IStoreService
     }
 
     private static StoreDto Map(Store s) => new(
-        s.Id, s.Name, s.OwnerName, s.Email, s.Phone, s.City, s.Gstin,
-        s.Status, s.CreatedAt, s.ApprovedAt, s.RejectionReason);
+        s.Id, s.Name, s.OwnerName, s.Email, s.Phone,
+        s.AddressLine, s.Pincode, s.CountryName, s.StateName, s.CityName,
+        s.Gstin, s.Pan, s.Status, s.CreatedAt, s.ApprovedAt, s.RejectionReason);
 }

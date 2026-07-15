@@ -2,7 +2,8 @@ using Kirana.Domain.Common.Enums;
 
 namespace Kirana.Application.Stores.Dtos;
 
-/// <summary>Public self-registration payload (PRD FR-1.1).</summary>
+/// <summary>Public self-registration payload (PRD FR-1.1). Location is chosen via
+/// the country → state → city cascade (see /api/geo).</summary>
 public record RegisterStoreRequest(
     string StoreName,
     string OwnerName,
@@ -10,9 +11,12 @@ public record RegisterStoreRequest(
     string Phone,
     string Password,
     string? AddressLine,
-    string? City,
     string? Pincode,
-    string? Gstin);
+    Guid? CountryId,
+    Guid? StateId,
+    Guid? CityId,
+    string? Gstin,
+    string? Pan);
 
 public record StoreDto(
     Guid Id,
@@ -20,11 +24,25 @@ public record StoreDto(
     string OwnerName,
     string Email,
     string Phone,
-    string? City,
+    string? AddressLine,
+    string? Pincode,
+    string? CountryName,
+    string? StateName,
+    string? CityName,
     string? Gstin,
+    string? Pan,
     StoreStatus Status,
     DateTime CreatedAt,
     DateTime? ApprovedAt,
     string? RejectionReason);
 
 public record RejectStoreRequest(string Reason);
+
+public record StoreDocumentDto(
+    Guid Id,
+    Guid StoreId,
+    DocumentType DocumentType,
+    string FileName,
+    string ContentType,
+    long SizeBytes,
+    DateTime CreatedAt);

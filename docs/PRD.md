@@ -202,8 +202,9 @@ Advertising is a distinct capability with its own console, targeting, and billin
 Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (should-have), **P2** (nice-to-have / later).
 
 ### 5.1 Store Registration & Approval
-- **FR-1.1 (P0)** Public self-registration form capturing business identity, owner, contact, address, category, and GSTIN/tax IDs.
-- **FR-1.2 (P0)** Document upload for verification (business proof, ID, GST certificate).
+- **FR-1.1 (P0)** Public self-registration form capturing business identity, owner, contact, address, category, and statutory IDs (**GSTIN and PAN**).
+- **FR-1.1a (P0)** **Location via country → state → city cascade**: seeded reference data; picking a country loads its states, and picking a state loads its cities. Selected values are stored on the store.
+- **FR-1.2 (P0)** Document upload for verification (business proof, ID, GST certificate, PAN card) during onboarding; Super Admin can view/download them.
 - **FR-1.3 (P0)** Store lifecycle states: `Pending → Active → Suspended → Rejected → Closed`.
 - **FR-1.4 (P0)** Super Admin approval queue with approve / reject / request-more-info and mandatory reason on rejection.
 - **FR-1.5 (P0)** Email/SMS notifications at every state change.
@@ -216,6 +217,13 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **FR-2.3 (P0)** Role-based access control (RBAC) per §3.2, customizable per store.
 - **FR-2.4 (P1)** Multi-outlet support: one owner can operate several stores under one account with a consolidated view.
 - **FR-2.5 (P1)** Store profile & settings (business hours, tax config, payment methods, delivery zones, receipt template).
+
+### 5.2a Authentication Methods
+- **FR-2a.1 (P0)** **Store staff** log in with email + password (JWT carrying user id, role, `store_id`); staff can only sign in once their store is **Active**.
+- **FR-2a.2 (P0)** **Store owner — Google Sign-In**: owners may authenticate with Google (the Google ID token is verified server-side and matched to their registered email).
+- **FR-2a.3 (P0)** **Customer — phone OTP**: marketplace customers log in by requesting a one-time code to their phone and verifying it; the customer is created on first successful login (no password).
+- **FR-2a.4 (P0)** **Super Admin** logs in with email + password and governs the platform.
+- **FR-2a.5 (P1)** OTP delivered via SMS/WhatsApp (provider per [COSTS.md](COSTS.md)); expiry + attempt limits enforced.
 
 ### 5.3 Catalog & Inventory
 - **FR-3.1 (P0)** Product master: name, SKU/barcode, category, unit of measure, tax rate, purchase & selling price, images.
@@ -377,7 +385,9 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 ## 7. Data Model (High-Level Entities)
 - **Platform**: `SuperAdmin`, `PlatformFeeConfig`, `FeeLedger` (accrued platform fees), `Settlement`, `Payout`, `AuditLog`.
 - **Advertising**: `Advertiser` (store or brand), `Brand`, `AdCampaign`, `AdCreative`, `AdPlacement`, `AdImpression`, `AdClick`, `AdvertiserWallet`.
-- **Store/Tenant**: `Store`, `StoreSettings`, `StoreServiceArea` (delivery serviceability / zone), `User`, `Role`, `Permission`.
+- **Store/Tenant**: `Store` (incl. GSTIN + PAN + country/state/city), `StoreSettings`, `StoreServiceArea` (delivery serviceability / zone), `StoreDocument` (KYC uploads), `User`, `Role`, `Permission`.
+- **Geo (reference data)**: `Country`, `State`, `City` — seeded; drives the registration cascade.
+- **Customers/Auth**: `Customer` (phone-OTP marketplace shopper), `OtpCode` (hashed one-time codes).
 - **Catalog/Inventory**: `Product`, `Category`, `UnitOfMeasure`, `Batch`, `StockLedger`, `StockAdjustment`.
 - **Purchasing**: `Supplier`, `PurchaseOrder`, `GoodsReceipt`, `PurchaseInvoice`, `PurchaseReturn`.
 - **Sales**: `SalesInvoice`, `SalesLine`, `Payment`, `SalesReturn`, `Customer`.
