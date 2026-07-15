@@ -7,7 +7,7 @@
 | **Product Name** | KiranaManagement (working title) |
 | **Version** | 1.0 (Draft) |
 | **Status** | Draft for Review |
-| **Author** | Illusio Designs |
+| **Authors** | Mansi, Hiral, Zigma |
 | **Last Updated** | 2026-07-15 |
 | **Reviewers** | Product, Engineering, Design, Business |
 
@@ -310,11 +310,28 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
   - **Driver App** — mobile app for delivery drivers (assignments, navigation, proof of delivery).
   - **Super Admin Console** — platform governance.
 - **Backend**: Multi-tenant API services grouped by domain (Auth/Tenancy, Catalog/Inventory, Purchasing, Sales/POS, Online/Orders, **Delivery/Dispatch**, Accounting, Notifications).
-- **Data**: Relational database with tenant isolation (row-level `store_id` or schema-per-tenant), object storage for documents/images.
+- **Data**: **MySQL** relational database with tenant isolation (row-level `store_id`, enforced globally), object storage for documents/images.
 - **Integrations**: Payment gateway (UPI/cards), SMS/WhatsApp/email providers, GST/e-invoicing (later).
 - **Cross-cutting**: AuthN/AuthZ (RBAC + MFA), audit logging, background jobs (notifications, sync, reports), offline sync for POS.
 
-> Final tech stack (framework, database, hosting) to be decided in the technical design doc.
+### 8.1 Technology Stack
+| Layer | Technology | Notes |
+|---|---|---|
+| **Backend / API** | **ASP.NET Core (C#) Web API** (.NET 8 LTS) | RESTful JSON APIs; modular by domain. |
+| **ORM / Data access** | **Entity Framework Core** with the **Pomelo MySQL provider** | Code-first migrations; global query filter on `store_id` for tenant isolation. |
+| **Database** | **MySQL 8.x** | Single multi-tenant schema with row-level `store_id`. |
+| **Auth** | ASP.NET Core Identity + **JWT** (access/refresh tokens) | RBAC via roles/claims; MFA for admins. |
+| **Store Dashboard (web)** | ASP.NET Core **MVC / Razor Pages**, or a SPA (React/Angular/Blazor) on the API | Team's choice; MVC/Razor is fastest for a .NET team. |
+| **Customer Order App** | Responsive web (PWA) first; mobile app later | Consumes the same Web API. |
+| **Driver App** | Mobile (PWA first, native/MAUI later) | Consumes the same Web API; push notifications. |
+| **Real-time** | **SignalR** | Live order status, driver location, dashboard updates. |
+| **Background jobs** | **Hangfire** (or `IHostedService`) | Notifications, offline-sync processing, scheduled reports. |
+| **Caching** | In-memory / **Redis** (optional, for scale) | Sessions, hot catalog data. |
+| **API docs** | **Swagger / OpenAPI** (Swashbuckle) | Contract for all client apps. |
+| **Testing** | **xUnit** + Moq; integration tests on a test MySQL DB | CI-gated. |
+| **Hosting** | Kestrel behind Nginx/IIS; Linux or Windows; Docker-friendly | Cloud VM or container platform. |
+
+> This is the committed stack for v1: **ASP.NET Core Web API + Entity Framework Core + MySQL**, with SignalR for real-time and Hangfire for background work. See [DEVELOPMENT.md](DEVELOPMENT.md) for the developer setup and build guide.
 
 ---
 
