@@ -16,7 +16,12 @@
 ## 1. Overview
 
 ### 1.1 Summary
-KiranaManagement is a **multi-tenant SaaS platform** that lets any grocery / kirana store **self-register**, get **approved by a platform administrator**, and then run their entire business from one place: **inventory, purchasing, in-store sales (POS), online storefront sales, order management, and accounting**.
+KiranaManagement is a **multi-tenant SaaS platform** that lets any grocery / kirana store **self-register**, get **approved by a platform administrator**, and then run their entire business from one place: **inventory, purchasing, in-store sales (POS), online storefront sales, order management, delivery, and accounting**.
+
+The platform ships as **three connected surfaces** around a shared backend:
+1. **Customer Online-Order App** — customers browse a store's catalog, order, pay, and track delivery.
+2. **Driver App** — delivery drivers receive assigned orders, navigate, and update delivery status with proof of delivery.
+3. **Store Management Dashboard** — store owners/staff run operations (catalog, inventory, purchase, POS, order fulfilment, delivery dispatch, accounting, reports).
 
 Each store operates as an isolated tenant with its own data, staff, catalog, and books, while a central **Super Admin** governs onboarding, approvals, billing, and platform-wide health.
 
@@ -60,16 +65,18 @@ Give every grocery store — from a single kirana shop to a multi-outlet chain �
 - Product catalog & inventory management (batches, expiry, units).
 - Purchase management (suppliers, purchase orders, goods receipt, supplier bills).
 - In-store Sales / POS (billing, discounts, multiple payment modes, returns).
-- Online sales storefront (browse, cart, checkout, delivery/pickup).
+- **Customer Online-Order App** — storefront browse, cart, checkout, pay, order tracking (delivery/pickup).
 - Order management (unified queue for online + phone orders, fulfilment states).
+- **Driver App & delivery dispatch** — assign orders to drivers, live status, proof of delivery.
 - Accounting (ledgers, GST, receivables/payables, P&L, reports).
-- Notifications (email/SMS/WhatsApp/in-app).
+- Notifications (email/SMS/WhatsApp/in-app/push).
 - Platform Super Admin console.
 
 ### 2.2 Out of Scope (v1 — candidates for later)
 - Full-blown WMS / multi-warehouse logistics optimization.
 - Third-party marketplace (Amazon/Flipkart) listing sync.
-- In-house delivery fleet management & rider app.
+- Third-party fleet aggregator integration (own driver app is **in scope**; external logistics APIs are later).
+- Advanced route optimization across multiple drivers/orders (basic assignment is in scope).
 - Advanced demand forecasting / AI replenishment.
 - Loyalty program engine (basic points only, if any).
 - Payroll / HR management.
@@ -92,7 +99,8 @@ Give every grocery store — from a single kirana shop to a multi-outlet chain �
 | **Cashier / POS Operator** | Bills customers at the counter. | Fast billing, returns, cash handling. |
 | **Inventory / Stock Clerk** | Manages stock and receiving. | Stock in/out, goods receipt, stock counts. |
 | **Accountant** | Manages the books. | Ledgers, GST, receivables/payables, reconciliation. |
-| **Online Customer** | Buys from a store's storefront. | Browse, order, pay, track. |
+| **Online Customer** | Buys from a store's storefront/app. | Browse, order, pay, track delivery. |
+| **Delivery Driver** | Delivers orders for a store. | See assigned orders, navigate, update status, capture proof of delivery, track earnings. |
 
 ### 3.2 Role → Permission Matrix (high level)
 | Capability | Super Admin | Owner | Manager | Cashier | Stock Clerk | Accountant |
@@ -109,6 +117,8 @@ Give every grocery store — from a single kirana shop to a multi-outlet chain �
 ✅ Full · ◎ Configurable · View = read-only · — None
 
 > Roles and permissions are configurable per store; the matrix above is the recommended default.
+>
+> **Delivery Driver** is a separate app role scoped to *only* their assigned deliveries — they can view assigned order details (customer name, address, items, amount to collect for COD), update delivery status, and capture proof of delivery. They have **no** access to catalog, inventory, pricing, accounting, or other stores' data.
 
 ---
 
@@ -135,12 +145,21 @@ Give every grocery store — from a single kirana shop to a multi-outlet chain �
 3. Supplier **bill** is entered/attached → payable created, stock increased.
 4. Payment recorded against the bill.
 
-### 4.4 Online Order
-1. Customer browses the store's storefront, adds items to cart, checks out (delivery or pickup slot).
+### 4.4 Online Order (Customer App)
+1. Customer browses the store's storefront/app, adds items to cart, checks out (delivery or pickup slot).
 2. Pays online or chooses cash-on-delivery.
 3. Order lands in the store's **Order Manager** as **New**.
-4. Staff **accepts → picks/packs → ready → out-for-delivery/pickup → delivered**.
-5. Sale posts to inventory & accounts on fulfilment; customer gets status updates.
+4. Staff **accepts → picks/packs → ready**.
+5. For delivery orders, staff **assign a driver** (see §4.5); for pickup, customer is notified it's ready.
+6. Sale posts to inventory & accounts on fulfilment; customer gets live status updates and can track the driver.
+
+### 4.5 Delivery (Driver App)
+1. Store staff assign a **Ready** order to an available driver from the dashboard.
+2. Driver receives a **push notification** and sees the order in their app (items, address, amount to collect if COD).
+3. Driver **accepts → picks up from store → out for delivery** (navigates via map).
+4. Customer sees live status (and optional driver location).
+5. Driver **marks delivered** with **proof of delivery** (OTP, photo, or signature); for COD, records cash collected.
+6. Order closes; delivery + any COD collection post to accounting; driver's completed-delivery count/earnings update.
 
 ---
 
@@ -208,35 +227,49 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **FR-7.3 (P0)** Fulfilment posts to inventory and accounting.
 - **FR-7.4 (P1)** Customer notifications on each status change.
 - **FR-7.5 (P1)** Partial fulfilment / item substitution & refunds.
-- **FR-7.6 (P2)** Assign orders to delivery staff and capture proof of delivery.
+- **FR-7.6 (P0)** Assign/re-assign a **Ready** delivery order to a driver from the dashboard (see §5.8).
 
-### 5.8 Accounting
-- **FR-8.1 (P0)** Auto-posting of sales, purchases, returns, and payments to a double-entry ledger.
-- **FR-8.2 (P0)** Chart of accounts with sensible retail defaults.
-- **FR-8.3 (P0)** Accounts **Receivable** (customer credit) & **Payable** (suppliers) with aging.
-- **FR-8.4 (P0)** **GST**: tax capture on sales/purchases; GST summary/output & input reports.
-- **FR-8.5 (P0)** Core reports: Sales, Purchase, P&L, Cash/Bank book, Tax summary, Stock valuation.
-- **FR-8.6 (P1)** Expense entry (rent, utilities, salaries).
-- **FR-8.7 (P1)** Bank/cash reconciliation.
-- **FR-8.8 (P1)** Export to CSV/PDF; accountant-friendly exports (e.g., Tally-compatible).
-- **FR-8.9 (P2)** Financial year close & opening balance carry-forward.
+### 5.8 Driver App & Delivery Management
+- **FR-8.1 (P0)** Driver onboarding: store adds a driver (name, phone, vehicle); driver logs into the Driver App.
+- **FR-8.2 (P0)** Driver availability toggle (online/offline) and view of orders assigned to them.
+- **FR-8.3 (P0)** Assigned-order detail: items, customer name & address, contact, COD amount to collect.
+- **FR-8.4 (P0)** Delivery status flow in-app: `Assigned → Accepted → Picked-up → Out-for-delivery → Delivered` (+ `Failed/Returned`).
+- **FR-8.5 (P0)** **Proof of delivery**: delivery OTP, photo, and/or signature capture.
+- **FR-8.6 (P0)** COD handling: record cash collected; reconcile driver cash against the store.
+- **FR-8.7 (P0)** Push notifications to the driver on new assignment / changes.
+- **FR-8.8 (P1)** Map & navigation to the customer address; optional live driver location shared with customer.
+- **FR-8.9 (P1)** Driver dashboard: today's deliveries, completed count, and earnings/collections summary.
+- **FR-8.10 (P1)** Failed-delivery reasons and re-attempt / return-to-store handling.
+- **FR-8.11 (P2)** Multi-order batch pickup and simple sequencing.
+- **FR-8.12 (P2)** Driver ratings/feedback from customers.
 
-### 5.9 Reporting & Analytics
-- **FR-9.1 (P0)** Store dashboard: today's sales, orders, low stock, dues.
-- **FR-9.2 (P1)** Trends: top products, sales by category/period, margins.
-- **FR-9.3 (P1)** Multi-outlet consolidated dashboard for chain owners.
-- **FR-9.4 (P2)** Scheduled report emails.
+### 5.9 Accounting
+- **FR-9.1 (P0)** Auto-posting of sales, purchases, returns, and payments to a double-entry ledger.
+- **FR-9.2 (P0)** Chart of accounts with sensible retail defaults.
+- **FR-9.3 (P0)** Accounts **Receivable** (customer credit) & **Payable** (suppliers) with aging.
+- **FR-9.4 (P0)** **GST**: tax capture on sales/purchases; GST summary/output & input reports.
+- **FR-9.5 (P0)** Core reports: Sales, Purchase, P&L, Cash/Bank book, Tax summary, Stock valuation.
+- **FR-9.6 (P1)** Expense entry (rent, utilities, salaries).
+- **FR-9.7 (P1)** Bank/cash reconciliation.
+- **FR-9.8 (P1)** Export to CSV/PDF; accountant-friendly exports (e.g., Tally-compatible).
+- **FR-9.9 (P2)** Financial year close & opening balance carry-forward.
 
-### 5.10 Notifications
-- **FR-10.1 (P0)** Transactional notifications (approval, order status, low stock, dues) via email/SMS/WhatsApp/in-app.
-- **FR-10.2 (P1)** Per-user notification preferences.
+### 5.10 Reporting & Analytics
+- **FR-10.1 (P0)** Store dashboard: today's sales, orders, low stock, dues, deliveries in progress.
+- **FR-10.2 (P1)** Trends: top products, sales by category/period, margins.
+- **FR-10.3 (P1)** Multi-outlet consolidated dashboard for chain owners.
+- **FR-10.4 (P2)** Scheduled report emails.
 
-### 5.11 Platform Super Admin Console
-- **FR-11.1 (P0)** Store approval queue and store directory with states.
-- **FR-11.2 (P0)** Suspend/reactivate/close stores.
-- **FR-11.3 (P1)** Subscription plans & billing management for stores.
-- **FR-11.4 (P1)** Platform health, usage metrics, and audit logs.
-- **FR-11.5 (P2)** Announcements/broadcasts to stores.
+### 5.11 Notifications
+- **FR-11.1 (P0)** Transactional notifications (approval, order status, delivery updates, low stock, dues) via email/SMS/WhatsApp/in-app/push.
+- **FR-11.2 (P1)** Per-user notification preferences.
+
+### 5.12 Platform Super Admin Console
+- **FR-12.1 (P0)** Store approval queue and store directory with states.
+- **FR-12.2 (P0)** Suspend/reactivate/close stores.
+- **FR-12.3 (P1)** Subscription plans & billing management for stores.
+- **FR-12.4 (P1)** Platform health, usage metrics, and audit logs.
+- **FR-12.5 (P2)** Announcements/broadcasts to stores.
 
 ---
 
@@ -262,6 +295,7 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **Purchasing**: `Supplier`, `PurchaseOrder`, `GoodsReceipt`, `PurchaseInvoice`, `PurchaseReturn`.
 - **Sales**: `SalesInvoice`, `SalesLine`, `Payment`, `SalesReturn`, `Customer`.
 - **Online/Orders**: `Storefront`, `Cart`, `Order`, `OrderLine`, `OrderStatusHistory`, `DeliveryZone`.
+- **Delivery/Driver**: `Driver`, `DriverAvailability`, `DeliveryAssignment`, `DeliveryStatusHistory`, `ProofOfDelivery`, `CODCollection`.
 - **Accounting**: `Account` (CoA), `JournalEntry`, `LedgerPosting`, `TaxRate`, `Receivable`, `Payable`.
 - **Notifications**: `NotificationTemplate`, `NotificationLog`.
 
@@ -270,8 +304,12 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 ---
 
 ## 8. System Architecture (Conceptual)
-- **Clients**: Store web/mobile app (POS + management), Storefront (customer PWA), Super Admin console.
-- **Backend**: Multi-tenant API services grouped by domain (Auth/Tenancy, Catalog/Inventory, Purchasing, Sales/POS, Online/Orders, Accounting, Notifications).
+- **Clients (four surfaces over one backend)**:
+  - **Store Management Dashboard** — web/mobile app for POS + operations + delivery dispatch.
+  - **Customer Online-Order App** — customer PWA/mobile app (storefront, checkout, tracking).
+  - **Driver App** — mobile app for delivery drivers (assignments, navigation, proof of delivery).
+  - **Super Admin Console** — platform governance.
+- **Backend**: Multi-tenant API services grouped by domain (Auth/Tenancy, Catalog/Inventory, Purchasing, Sales/POS, Online/Orders, **Delivery/Dispatch**, Accounting, Notifications).
 - **Data**: Relational database with tenant isolation (row-level `store_id` or schema-per-tenant), object storage for documents/images.
 - **Integrations**: Payment gateway (UPI/cards), SMS/WhatsApp/email providers, GST/e-invoicing (later).
 - **Cross-cutting**: AuthN/AuthZ (RBAC + MFA), audit logging, background jobs (notifications, sync, reports), offline sync for POS.
@@ -293,9 +331,10 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 |---|---|---|
 | **Phase 0 — Foundation** | Tenancy & onboarding | Registration, approval workflow, RBAC, store provisioning, Super Admin console. |
 | **Phase 1 — Core Operations** | Sell & stock | Catalog/inventory, POS billing, purchase + GRN, basic reports. |
-| **Phase 2 — Online** | Reach customers | Storefront, cart/checkout, online payments, order manager. |
-| **Phase 3 — Finance** | Books & compliance | Full accounting, GST reports, receivables/payables, exports. |
-| **Phase 4 — Scale** | Depth & chains | Multi-outlet, offline POS, analytics, delivery assignment, loyalty. |
+| **Phase 2 — Online** | Reach customers | Customer order app (storefront, cart/checkout), online payments, order manager. |
+| **Phase 3 — Delivery** | Fulfil at the door | Driver app, delivery dispatch/assignment, proof of delivery, COD reconciliation, live tracking. |
+| **Phase 4 — Finance** | Books & compliance | Full accounting, GST reports, receivables/payables, exports. |
+| **Phase 5 — Scale** | Depth & chains | Multi-outlet, offline POS, analytics, route batching, loyalty. |
 
 ---
 
@@ -307,6 +346,8 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 | Financial posting errors | Wrong books, trust loss | Double-entry, idempotency, reconciliation, audits. |
 | Tenant data leakage | Severe/compliance | Strict tenant isolation, tests, security reviews. |
 | Overselling online vs offline | Customer dissatisfaction | Single shared real-time stock ledger. |
+| Driver COD cash leakage | Financial loss | Per-driver COD tracking, mandatory reconciliation, POD required to close orders. |
+| Failed / disputed deliveries | Refund cost, distrust | Proof of delivery (OTP/photo), failed-reason capture, re-attempt/return flow. |
 | Scope creep | Delayed launch | Strict P0/P1/P2 prioritization and phasing. |
 
 ---
@@ -331,6 +372,8 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **CoA**: Chart of Accounts.
 - **RBAC**: Role-Based Access Control.
 - **PWA**: Progressive Web App.
+- **COD**: Cash on Delivery.
+- **POD**: Proof of Delivery (OTP, photo, or signature confirming handover).
 
 ---
 
