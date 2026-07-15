@@ -55,6 +55,31 @@ Give every grocery store — from a single kirana shop to a multi-outlet chain �
 - **Accounting**: ≥ 70% of stores generate a monthly P&L / GST summary from the system.
 - **Retention**: ≥ 85% month-over-month store retention after 90 days.
 
+### 1.6 Business / Monetization Model
+The platform is **not subscription-based**. There are **no fixed monthly plans** for
+stores. Revenue comes from two streams:
+
+1. **Platform Fee** — a fee the platform earns on business the platform enables,
+   charged to the **store**. Configurable by the Super Admin as either:
+   - a **commission** (percentage of order value, typically on **online orders**), and/or
+   - a **flat per-transaction / per-order fee**.
+   Fees are accrued per order, netted against store settlements/payouts, and
+   visible to the store in a transparent fee statement.
+
+2. **Advertising Revenue** — paid promotion within the customer app / storefront,
+   sold to:
+   - **Stores** — promote their own products/store to nearby customers (e.g.
+     sponsored listings, top-of-search placement, banners).
+   - **Brands** — pay to promote their products across many stores (e.g. a brand
+     boosts its items in the category feed and product pages).
+
+Implication for the product: onboarding stays free/low-friction (drives store
+count), and monetization scales with **transactions and ad inventory**, not seats.
+Advertising is a distinct capability with its own console, targeting, and billing.
+
+> Because there is no subscription gate, the Super Admin console manages **fee
+> configuration, settlements/payouts, and ad campaigns/billing** instead of plans.
+
 ---
 
 ## 2. Scope
@@ -267,9 +292,29 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 ### 5.12 Platform Super Admin Console
 - **FR-12.1 (P0)** Store approval queue and store directory with states.
 - **FR-12.2 (P0)** Suspend/reactivate/close stores.
-- **FR-12.3 (P1)** Subscription plans & billing management for stores.
-- **FR-12.4 (P1)** Platform health, usage metrics, and audit logs.
-- **FR-12.5 (P2)** Announcements/broadcasts to stores.
+- **FR-12.3 (P0)** **Platform fee configuration** — set commission % and/or flat
+  per-order fee (globally, per category, or per store).
+- **FR-12.4 (P1)** **Settlements & payouts** — per-store fee statements, netting
+  of platform fees against collections, and payout records.
+- **FR-12.5 (P1)** Platform health, usage metrics, and audit logs.
+- **FR-12.6 (P2)** Announcements/broadcasts to stores.
+
+### 5.13 Advertising & Platform Monetization
+Revenue module for promoted placements sold to stores and brands (PRD §1.6).
+- **FR-13.1 (P1)** **Advertiser accounts** for stores and **brands** (brand is a
+  platform-level advertiser that can span many stores).
+- **FR-13.2 (P1)** **Ad campaigns** — create a campaign with budget, duration,
+  target (category, location/pincode, store), and creative (image/text).
+- **FR-13.3 (P1)** **Ad placements** in the customer app: sponsored product
+  listings, top-of-search/category slots, and home/banner slots.
+- **FR-13.4 (P1)** **Platform fee accrual** — record the platform fee on each
+  eligible (online) order into a fee ledger for settlement.
+- **FR-13.5 (P1)** Advertiser billing — charge for ads (prepaid wallet or
+  invoiced spend) with campaign spend tracking.
+- **FR-13.6 (P2)** Ad performance metrics — impressions, clicks, and attributed
+  orders per campaign.
+- **FR-13.7 (P2)** Ad review/approval by Super Admin before a campaign goes live.
+- **FR-13.8 (P2)** Frequency capping and clearly labelled "Sponsored" placements.
 
 ---
 
@@ -289,7 +334,8 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 ---
 
 ## 7. Data Model (High-Level Entities)
-- **Platform**: `SuperAdmin`, `SubscriptionPlan`, `Subscription`, `AuditLog`.
+- **Platform**: `SuperAdmin`, `PlatformFeeConfig`, `FeeLedger` (accrued platform fees), `Settlement`, `Payout`, `AuditLog`.
+- **Advertising**: `Advertiser` (store or brand), `Brand`, `AdCampaign`, `AdCreative`, `AdPlacement`, `AdImpression`, `AdClick`, `AdvertiserWallet`.
 - **Store/Tenant**: `Store`, `StoreSettings`, `User`, `Role`, `Permission`.
 - **Catalog/Inventory**: `Product`, `Category`, `UnitOfMeasure`, `Batch`, `StockLedger`, `StockAdjustment`.
 - **Purchasing**: `Supplier`, `PurchaseOrder`, `GoodsReceipt`, `PurchaseInvoice`, `PurchaseReturn`.
@@ -351,7 +397,8 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 | **Phase 2 — Online** | Reach customers | Customer order app (storefront, cart/checkout), online payments, order manager. |
 | **Phase 3 — Delivery** | Fulfil at the door | Driver app, delivery dispatch/assignment, proof of delivery, COD reconciliation, live tracking. |
 | **Phase 4 — Finance** | Books & compliance | Full accounting, GST reports, receivables/payables, exports. |
-| **Phase 5 — Scale** | Depth & chains | Multi-outlet, offline POS, analytics, route batching, loyalty. |
+| **Phase 5 — Monetize** | Fees & ads | Platform-fee accrual & settlements/payouts, advertiser accounts (stores + brands), ad campaigns/placements in the customer app, advertiser billing. |
+| **Phase 6 — Scale** | Depth & chains | Multi-outlet, offline POS, analytics, route batching, loyalty. |
 
 ---
 
@@ -371,11 +418,12 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 
 ## 12. Open Questions
 1. Target geography/tax regime beyond India for v1?
-2. Pricing model for stores (per-store flat, tiered, transaction fee)?
-3. Is multi-outlet needed in v1 or Phase 4?
+2. **Monetization decided:** platform fee (commission and/or flat per-order) + advertising revenue (stores + brands). *Remaining*: default commission %, and is the fee on online orders only or also in-store POS?
+3. Is multi-outlet needed in v1 or Phase 5?
 4. Own storefront domain vs platform subdomain per store?
-5. Delivery handled by stores themselves in v1 (no fleet)?
+5. Delivery handled by store's own drivers in v1 (own driver app; no third-party fleet)?
 6. Depth of accounting required at launch (basic vs full double-entry)?
+7. Advertising billing: prepaid wallet vs post-paid invoicing for brands at launch?
 
 ---
 
@@ -391,6 +439,11 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **PWA**: Progressive Web App.
 - **COD**: Cash on Delivery.
 - **POD**: Proof of Delivery (OTP, photo, or signature confirming handover).
+- **Platform Fee**: Commission and/or flat per-order fee the platform charges a store on enabled business.
+- **Settlement / Payout**: Netting of platform fees against collections and paying the store its balance.
+- **Advertiser**: A store or brand that pays for promoted placements.
+- **Brand**: A platform-level advertiser (e.g. an FMCG company) promoting products across many stores.
+- **CPC / CPM**: Cost-per-click / cost-per-thousand-impressions ad pricing models.
 
 ---
 

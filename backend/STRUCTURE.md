@@ -50,9 +50,20 @@ Kirana.Domain/
  ├─ Platform/                     # NOT tenant-scoped
  │   ├─ Store.cs
  │   ├─ StoreSettings.cs
- │   ├─ SubscriptionPlan.cs
- │   ├─ Subscription.cs
+ │   ├─ PlatformFeeConfig.cs      # commission % and/or flat per-order fee
+ │   ├─ FeeLedger.cs              # accrued platform fees per order
+ │   ├─ Settlement.cs
+ │   ├─ Payout.cs
  │   └─ AuditLog.cs
+ ├─ Advertising/                  # NOT tenant-scoped (brands span stores)
+ │   ├─ Advertiser.cs             # a store or a brand
+ │   ├─ Brand.cs
+ │   ├─ AdCampaign.cs
+ │   ├─ AdCreative.cs
+ │   ├─ AdPlacement.cs
+ │   ├─ AdImpression.cs
+ │   ├─ AdClick.cs
+ │   └─ AdvertiserWallet.cs
  ├─ Identity/
  │   ├─ User.cs
  │   ├─ Role.cs
@@ -137,7 +148,9 @@ Kirana.Application/
  ├─ Delivery/          (assignment, status, POD, COD — PRD §5.8)
  ├─ Accounting/        (postings, GST, reports — PRD §5.9)
  ├─ Reporting/         (dashboards, analytics — PRD §5.10)
- └─ Notifications/     (templates, dispatch — PRD §5.11)
+ ├─ Notifications/     (templates, dispatch — PRD §5.11)
+ ├─ Monetization/      (platform-fee config, accrual, settlements/payouts — PRD §1.6, §5.12–5.13)
+ └─ Advertising/       (advertisers/brands, campaigns, placements, billing — PRD §5.13)
 ```
 
 **Pattern per feature folder:**
@@ -200,7 +213,9 @@ Kirana.Api/
  │   ├─ OrdersController.cs        # online orders, order manager
  │   ├─ DeliveriesController.cs    # driver assignment + driver app endpoints
  │   ├─ AccountingController.cs
- │   └─ ReportsController.cs
+ │   ├─ ReportsController.cs
+ │   ├─ AdvertisingController.cs  # advertisers, campaigns, placements, ad billing
+ │   └─ SettlementsController.cs  # platform-fee statements & payouts (admin)
  ├─ Hubs/
  │   ├─ OrdersHub.cs               # live order status to customers/dashboard
  │   └─ DeliveryHub.cs             # assignment push + live driver location

@@ -158,7 +158,7 @@ automatically so a developer can never forget it.
    ```
 4. Set `StoreId` automatically on insert by overriding `SaveChanges`.
 
-> **Platform-level** entities (Store, SuperAdmin, SubscriptionPlan) are **not**
+> **Platform-level** entities (Store, SuperAdmin, PlatformFeeConfig, Advertiser/Brand) are **not**
 > tenant-filtered. The Super Admin console operates across all stores.
 
 ---
