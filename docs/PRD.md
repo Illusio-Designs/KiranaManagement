@@ -275,11 +275,14 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **FR-8.6 (P0)** **Proof of delivery**: delivery OTP, photo, and/or signature at the single drop.
 - **FR-8.7 (P0)** COD handling: record **total** cash collected for the whole order; reconcile driver cash; allocate collection back to each store part.
 - **FR-8.8 (P0)** Push notifications to the driver on new assignment / changes.
-- **FR-8.9 (P1)** Map & navigation with a suggested **store-to-store pickup route** then customer drop; optional live driver location shared with customer.
-- **FR-8.10 (P1)** Driver dashboard: today's deliveries, stores visited, completed count, and earnings/collections summary.
-- **FR-8.11 (P1)** Failed / partial pickup handling (a store can't fulfil): proceed with available items, flag the missing part, trigger refund/substitution on the parent order.
-- **FR-8.12 (P2)** Batching multiple parent orders and pickup-route optimization across them.
-- **FR-8.13 (P2)** Driver ratings/feedback from customers.
+- **FR-8.9 (P1)** **Maps & turn-by-turn navigation** (Swiggy/Instacart-style) to each store then the customer, via a maps provider (Google Maps Platform / Ola Maps / Mapmyindia). See [DRIVER_APP_INTEGRATIONS.md](DRIVER_APP_INTEGRATIONS.md).
+- **FR-8.10 (P1)** **Optimized multi-store pickup route** (order the stops efficiently) using a Directions/Route-Optimization API.
+- **FR-8.11 (P1)** **Live driver location** streamed to the backend and shown to the customer on a map; **ETA** shown to the customer.
+- **FR-8.12 (P1)** **Geofencing** to auto-detect arrival at a store / the customer and prompt the next action.
+- **FR-8.13 (P1)** Driver dashboard: today's deliveries, stores visited, completed count, and earnings/collections summary.
+- **FR-8.14 (P1)** Failed / partial pickup handling (a store can't fulfil): proceed with available items, flag the missing part, trigger refund/substitution on the parent order.
+- **FR-8.15 (P2)** Batching multiple parent orders and pickup-route optimization across them.
+- **FR-8.16 (P2)** Driver ratings/feedback from customers.
 
 ### 5.9 Accounting
 - **FR-9.1 (P0)** Auto-posting of sales, purchases, returns, and payments to a double-entry ledger.
@@ -390,6 +393,8 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 | **Customer Order App** | Responsive web (PWA) first; mobile app later | Consumes the same Web API. |
 | **Driver App** | Mobile (PWA first, native/MAUI later) | Consumes the same Web API; push notifications. |
 | **Real-time** | **SignalR** | Live order status, driver location, dashboard updates. |
+| **Maps & Location (Driver App)** | **Google Maps Platform** (default) or Ola Maps / Mapmyindia | Maps SDK, geocoding, directions, distance-matrix, route optimization; behind an `IMapProvider` seam. See [DRIVER_APP_INTEGRATIONS.md](DRIVER_APP_INTEGRATIONS.md). |
+| **Push notifications** | **FCM** (Android) + **APNs** (iOS) | Driver assignment & status alerts. |
 | **Background jobs** | **Hangfire** (or `IHostedService`) | Notifications, offline-sync processing, scheduled reports. |
 | **Caching** | In-memory / **Redis** (optional, for scale) | Sessions, hot catalog data. |
 | **API docs** | **Swagger / OpenAPI** (Swashbuckle) | Contract for all client apps. |
@@ -404,7 +409,22 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 - **Payments**: UPI, cards, netbanking, wallets (via gateway); COD.
 - **Messaging**: SMS, WhatsApp Business, Email.
 - **Accounting/Tax**: GST reports now; e-invoicing / e-way bill and Tally export later.
-- **Maps/Geo (P2)**: Delivery zone & address validation.
+- **Maps & Location (Driver App — Swiggy/Instacart-style)**: the driver app relies
+  on a maps/location stack rather than any single "Swiggy API" (those are internal).
+  We integrate the same *categories* of service:
+  - **Maps SDK** — render the map in the driver app.
+  - **Geocoding / Reverse geocoding** — store & customer address ↔ lat/long.
+  - **Directions / Routing** — turn-by-turn navigation to each store then the customer.
+  - **Distance Matrix / ETA** — arrival estimates and driver-to-order matching.
+  - **Route optimization** — order the multi-store pickup stops efficiently.
+  - **Live location** — stream the driver's GPS to the backend (SignalR) for
+    customer tracking; **geofencing** to auto-detect arrival at a store/customer.
+  - **Push notifications** — new assignment / status via FCM (Android) & APNs (iOS).
+  - **Recommended provider:** **Google Maps Platform** (what Swiggy/Instacart largely
+    use). **Alternatives:** **Ola Maps** or **MapmyIndia/Mappls** (India, lower cost),
+    **Mapbox**, or **HERE**. See [driver integrations guide](DRIVER_APP_INTEGRATIONS.md).
+- **Third-party logistics (later)**: optionally dispatch to external fleets
+  (e.g. Swiggy Genie / Dunzo-style delivery-as-a-service) instead of own drivers.
 
 ---
 

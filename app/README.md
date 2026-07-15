@@ -14,6 +14,13 @@ The customer-facing and driver-facing apps. Both consume the same
 move to native / .NET MAUI later. Push notifications for order and delivery
 updates.
 
+**Driver maps & navigation (Swiggy/Instacart-style):** the Driver App uses a
+maps/location stack — Maps SDK, geocoding, directions, route optimization, live
+GPS tracking (via SignalR), geofencing, and FCM/APNs push. Recommended provider
+**Google Maps Platform** (Ola Maps / Mapmyindia as India cost alternatives),
+kept behind an `IMapProvider` seam. See
+[../docs/DRIVER_APP_INTEGRATIONS.md](../docs/DRIVER_APP_INTEGRATIONS.md).
+
 ## Suggested layout
 ```
 app/

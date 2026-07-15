@@ -134,6 +134,8 @@ Kirana.Application/
  │   │   ├─ IEmailSender.cs
  │   │   ├─ ISmsSender.cs
  │   │   ├─ IPaymentGateway.cs
+ │   │   ├─ IMapProvider.cs        # geocode / route / ETA — Google Maps or Ola Maps behind one seam
+ │   │   ├─ IPushSender.cs         # FCM / APNs push to driver & customer apps
  │   │   └─ IJwtTokenService.cs
  │   ├─ Models/                    # Result<T>, PagedResult<T>, error types
  │   └─ Behaviors/                 # validation / logging cross-cutting
@@ -188,7 +190,9 @@ Kirana.Infrastructure/
  │   ├─ Payments/  (RazorpayGateway.cs / StripeGateway.cs : IPaymentGateway)
  │   ├─ Sms/       (TwilioSmsSender.cs : ISmsSender)
  │   ├─ Email/     (SmtpEmailSender.cs : IEmailSender)
- │   └─ Whatsapp/
+ │   ├─ Whatsapp/
+ │   ├─ Maps/      (GoogleMapsProvider.cs / OlaMapsProvider.cs : IMapProvider — see docs/DRIVER_APP_INTEGRATIONS.md)
+ │   └─ Push/      (FcmPushSender.cs / ApnsPushSender.cs : IPushSender)
  ├─ Jobs/                          # Hangfire background jobs (notifications, sync, reports)
  └─ DependencyInjection.cs         # AddInfrastructure() — registers DbContext + services
 ```
