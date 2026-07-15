@@ -96,14 +96,17 @@ Kirana.Domain/
  │   ├─ OrderLine.cs             # belongs to a StoreOrder
  │   ├─ OrderStatusHistory.cs
  │   └─ StoreOrderStatusHistory.cs
- ├─ Delivery/                     # driver pool + assignment are platform-level
- │   ├─ Driver.cs
- │   ├─ DriverAvailability.cs
- │   ├─ DeliveryAssignment.cs     # assigns a PARENT order to one driver
- │   ├─ PickupTask.cs             # one per contributing store: items to collect + collected status
+ ├─ Delivery/                     # platform-level; 3PL-first
+ │   ├─ DeliveryProvider.cs       # a configured 3PL partner (Porter/Borzo/...)
+ │   ├─ DeliveryProviderConfig.cs
+ │   ├─ DeliveryTask.cs           # booked delivery for a parent order: provider, externalTaskId, trackingUrl, fee, state
+ │   ├─ PickupPoint.cs            # one per contributing store on the task
  │   ├─ DeliveryStatusHistory.cs
+ │   ├─ DeliveryWebhookEvent.cs   # raw inbound partner events (idempotency/audit)
  │   ├─ ProofOfDelivery.cs
- │   └─ CODCollection.cs          # total for order, allocated per StoreOrder
+ │   ├─ CODCollection.cs          # total for order, allocated per StoreOrder
+ │   ├─ Driver.cs                 # OPTIONAL own-fleet fallback
+ │   └─ DriverAvailability.cs     # OPTIONAL own-fleet fallback
  └─ Accounting/
      ├─ Account.cs               # chart of accounts
      ├─ JournalEntry.cs
@@ -134,6 +137,7 @@ Kirana.Application/
  │   │   ├─ IEmailSender.cs
  │   │   ├─ ISmsSender.cs
  │   │   ├─ IPaymentGateway.cs
+ │   │   ├─ IDeliveryProvider.cs   # 3PL courier seam: getQuote/createTask/cancel/track — Porter/Borzo/Shiprocket
  │   │   ├─ IMapProvider.cs        # geocode / route / ETA — Google Maps or Ola Maps behind one seam
  │   │   ├─ IPushSender.cs         # FCM / APNs push to driver & customer apps
  │   │   └─ IJwtTokenService.cs
@@ -150,7 +154,7 @@ Kirana.Application/
  ├─ Sales/             (POS billing, returns — PRD §5.5)
  ├─ Marketplace/       (unified catalog aggregation, multi-store cart, checkout, order SPLIT into StoreOrders — PRD §5.6)
  ├─ Orders/            (parent order + per-store parts, order manager — PRD §5.7)
- ├─ Delivery/          (assign parent order, multi-store PickupTasks, status, POD, COD — PRD §5.8)
+ ├─ Delivery/          (3PL dispatch: quote/book/track/webhook + POD/COD; optional own-driver — PRD §5.8)
  ├─ Accounting/        (postings, GST, reports — PRD §5.9)
  ├─ Reporting/         (dashboards, analytics — PRD §5.10)
  ├─ Notifications/     (templates, dispatch — PRD §5.11)
@@ -191,6 +195,7 @@ Kirana.Infrastructure/
  │   ├─ Sms/       (TwilioSmsSender.cs : ISmsSender)
  │   ├─ Email/     (SmtpEmailSender.cs : IEmailSender)
  │   ├─ Whatsapp/
+ │   ├─ Delivery/  (PorterProvider.cs / BorzoProvider.cs / ShiprocketProvider.cs : IDeliveryProvider — see docs/DELIVERY_INTEGRATIONS.md)
  │   ├─ Maps/      (GoogleMapsProvider.cs / OlaMapsProvider.cs : IMapProvider — see docs/DRIVER_APP_INTEGRATIONS.md)
  │   └─ Push/      (FcmPushSender.cs / ApnsPushSender.cs : IPushSender)
  ├─ Jobs/                          # Hangfire background jobs (notifications, sync, reports)
@@ -218,7 +223,8 @@ Kirana.Api/
  │   ├─ PurchaseOrdersController.cs
  │   ├─ SalesController.cs         # POS billing, returns
  │   ├─ OrdersController.cs        # online orders, order manager
- │   ├─ DeliveriesController.cs    # driver assignment + driver app endpoints
+ │   ├─ DeliveriesController.cs    # 3PL dispatch/track + optional own-driver endpoints
+ │   ├─ DeliveryWebhooksController.cs  # POST /api/webhooks/delivery/{provider} — verify sig, dedupe, update status
  │   ├─ AccountingController.cs
  │   ├─ ReportsController.cs
  │   ├─ AdvertisingController.cs  # advertisers, campaigns, placements, ad billing

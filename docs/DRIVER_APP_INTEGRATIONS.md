@@ -1,8 +1,14 @@
 # Driver App Integrations — Maps, Location & Navigation
 
-**Goal:** give our Driver App the same delivery experience as **Swiggy** and
-**Instacart** — live map, turn-by-turn navigation, multi-store pickup routing,
-real-time driver tracking, arrival detection, and push notifications.
+> **Scope note:** delivery is now **primarily fulfilled by third-party logistics
+> partners** — see [DELIVERY_INTEGRATIONS.md](DELIVERY_INTEGRATIONS.md). This
+> document applies to the **optional own-driver app** (fallback) and to the
+> **customer-side live-tracking map** used regardless of who delivers.
+
+**Goal:** give our (optional) Driver App and the customer tracking map the same
+experience as **Swiggy** and **Instacart** — live map, turn-by-turn navigation,
+multi-store pickup routing, real-time driver tracking, arrival detection, and
+push notifications.
 
 > **Important:** "Swiggy API" / "Instacart API" are **internal** — they are not
 > public APIs you can call. What those apps actually use is a **stack of
@@ -65,7 +71,7 @@ A marketplace order has **several stores to visit, then one customer** (PRD §5.
    store waypoints, and the customer as the final destination, asking it to
    **optimize waypoint order**.
 3. Show the driver the ordered stop list + turn-by-turn to the **next** stop.
-4. As each store's `PickupTask` is marked collected, advance to the next stop;
+4. As each store's pickup stop is marked collected, advance to the next stop;
    after the last store, navigate to the customer.
 
 > Start simple: nearest-next ordering is fine for a first version; add true

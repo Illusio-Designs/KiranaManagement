@@ -160,11 +160,11 @@ automatically so a developer can never forget it.
 
 > **Platform-level** entities span stores and are **not** tenant-filtered:
 > Store, SuperAdmin, PlatformFeeConfig, Advertiser/Brand, and the **marketplace
-> order graph** — `Order` (parent), `Cart`, `Driver`, `DeliveryAssignment`.
-> Their tenant-owned children **are** filtered: `StoreOrder`, `OrderLine`, and
-> `PickupTask` each carry a `StoreId`, so a store sees only its part of a shared
-> order. In short, these entities are **not**
-> tenant-filtered. The Super Admin console operates across all stores.
+> order graph** — `Order` (parent), `Cart`, `DeliveryTask`, `DeliveryProvider`,
+> and the optional own-fleet `Driver` pool. Their tenant-owned children **are**
+> filtered: `StoreOrder`, `OrderLine`, and `PickupPoint` each carry a `StoreId`,
+> so a store sees only its part of a shared order. The Super Admin console
+> operates across all stores.
 
 ---
 
@@ -180,7 +180,7 @@ Create the entities from **PRD §7** in `Kirana.Domain`. Suggested build order
 | Purchasing | `Supplier`, `PurchaseOrder`, `GoodsReceipt`, `PurchaseInvoice`, `PurchaseReturn` |
 | Sales / POS | `SalesInvoice`, `SalesLine`, `Payment`, `SalesReturn`, `Customer` |
 | Marketplace / orders | `Cart`, `CartLine`, `Order` (parent), `StoreOrder` (per-store part), `OrderLine`, `OrderStatusHistory`, `StoreOrderStatusHistory` |
-| Delivery / driver | `Driver`, `DriverAvailability`, `DeliveryAssignment` (parent order), `PickupTask` (per store), `DeliveryStatusHistory`, `ProofOfDelivery`, `CODCollection` |
+| Delivery (3PL) | `DeliveryProvider`, `DeliveryProviderConfig`, `DeliveryTask` (parent order), `PickupPoint` (per store), `DeliveryStatusHistory`, `DeliveryWebhookEvent`, `ProofOfDelivery`, `CODCollection`; optional own-fleet `Driver`, `DriverAvailability` |
 | Accounting | `Account`, `JournalEntry`, `LedgerPosting`, `TaxRate`, `Receivable`, `Payable` |
 | Notifications | `NotificationTemplate`, `NotificationLog` |
 
@@ -252,11 +252,12 @@ sync.
    - On checkout: create the **parent `Order`** and **split** it into per-store `StoreOrder`s (this split is the heart of the model — test it hard).
    - Payment gateway integration (start with a sandbox), COD.
    - Order Manager: each store sees & advances only its `StoreOrder`; parent status derives from parts.
-4. **Phase 3 — Delivery (multi-store pickup)**
-   - Driver entity + Driver App APIs; assign the **parent order** to one driver.
-   - Generate a **`PickupTask` per contributing store**; driver marks each store collected before "out for delivery".
-   - Single delivery, POD, COD total reconcile (allocated per `StoreOrder`).
-   - SignalR push to drivers; live tracking.
+4. **Phase 3 — Delivery (third-party logistics)**
+   - `IDeliveryProvider` seam + **one 3PL partner** (Porter/Borzo/Shiprocket): `getQuote → createTask → track`.
+   - `DeliveryTask` with a **`PickupPoint` per contributing store** (multi-store pickup).
+   - **Webhook endpoint** to receive partner status (verify signature, dedupe, map status, SignalR to customer); Hangfire polling fallback.
+   - POD + COD total reconcile (allocated per `StoreOrder`); courier fee handling.
+   - *(Optional later)* own-driver app fallback — see DRIVER_APP_INTEGRATIONS.md.
 5. **Phase 4 — Finance**
    - Double-entry postings **per `StoreOrder`** (each store's books) + POS/purchases; GST & core reports.
 6. **Phase 5 — Monetize**

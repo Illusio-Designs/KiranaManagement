@@ -18,18 +18,19 @@
 ### 1.1 Summary
 KiranaManagement is a **multi-tenant SaaS platform** that lets any grocery / kirana store **self-register**, get **approved by a platform administrator**, and then run their entire business from one place: **inventory, purchasing, in-store sales (POS), online storefront sales, order management, delivery, and accounting**.
 
-The platform ships as **three connected surfaces** around a shared backend:
+The platform ships as **connected surfaces** around a shared backend, with
+**delivery fulfilled by third-party logistics partners via their APIs**:
 1. **Customer Online-Order App** — a **single marketplace**: customers browse a **unified catalog aggregated across all stores' live inventory**, add items **from any number of stores into one cart**, and place **one order with one order number**. They order from the *app/platform*, not store-by-store.
-2. **Driver App** — a driver is assigned that single order, **collects the items from every store involved in it, consolidates them, and delivers them together to the customer under the same order number**.
+2. **Delivery via Third-Party Logistics (3PL)** — the platform does **not run its own fleet by default**. For each order it **books a delivery task with a third-party courier service** (e.g. Porter, Borzo, Shadowfax, Shiprocket) through their API, then **tracks the assigned rider** and receives status updates until the order is delivered under the same order number. An **optional own-driver app** exists as a fallback/alternative (see §5.8).
 3. **Store Management Dashboard** — store owners/staff run operations (catalog, inventory, purchase, POS, order fulfilment, delivery dispatch, accounting, reports). For any marketplace order, each store sees and fulfils **only its own portion** (its pick-list) of that shared order.
 
 ### 1.1.1 Marketplace Ordering Model (key concept)
 - One customer order (**one order number**) may contain items sourced from **multiple stores**.
 - Internally the order is split into per-store **fulfilment parts** (sub-orders / pick-lists), one per contributing store, so each store prepares only its items and each store's sales, stock, and platform fee post to that store.
-- A **single delivery** consolidates all parts: the driver does a **multi-pickup run** (one stop per store), then **one drop** to the customer, all tracked under the same parent order number.
-- The customer experiences one basket, one payment, one order, one delivery — the multi-store split is invisible to them.
+- A **single delivery** consolidates all parts: the platform books a **3PL delivery task with a multi-pickup route** (one stop per store) then **one drop** to the customer; the courier's rider collects from each store and delivers together, all tracked under the same parent order number.
+- The customer experiences one basket, one payment, one order, one delivery — the multi-store split and the courier partner are invisible to them.
 
-Each store operates as an isolated tenant with its own data, staff, catalog, and books, while a central **Super Admin** governs onboarding, approvals, fees, and platform-wide health. Marketplace orders are **platform-level** and span stores; each store is exposed only to its own part.
+Each store operates as an isolated tenant with its own data, staff, catalog, and books, while a central **Super Admin** governs onboarding, approvals, fees, delivery-partner config, and platform-wide health. Marketplace orders are **platform-level** and span stores; each store is exposed only to its own part.
 
 ### 1.2 Problem Statement
 Small and mid-sized grocery stores today run on paper registers, disconnected spreadsheets, or point solutions that don't talk to each other. As a result they:
@@ -98,7 +99,7 @@ Advertising is a distinct capability with its own console, targeting, and billin
 - In-store Sales / POS (billing, discounts, multiple payment modes, returns).
 - **Customer Online-Order App (marketplace)** — unified catalog across all stores, multi-store cart, single checkout/payment, one order number, order tracking.
 - Order management — one **parent order** split into per-store **parts (pick-lists)**; each store fulfils only its part.
-- **Driver App & delivery dispatch** — assign one order to a driver for **multi-store pickup + single delivery**, live status, proof of delivery.
+- **Delivery via third-party logistics (3PL)** — book a courier task per order (multi-store pickup + single drop), status webhooks, live tracking, POD/COD; optional own-driver app as fallback.
 - Accounting (ledgers, GST, receivables/payables, P&L, reports).
 - Notifications (email/SMS/WhatsApp/in-app/push).
 - Platform Super Admin console.
@@ -106,8 +107,8 @@ Advertising is a distinct capability with its own console, targeting, and billin
 ### 2.2 Out of Scope (v1 — candidates for later)
 - Full-blown WMS / multi-warehouse logistics optimization.
 - Third-party marketplace (Amazon/Flipkart) listing sync.
-- Third-party fleet aggregator integration (own driver app is **in scope**; external logistics APIs are later).
-- Advanced route optimization across multiple drivers/orders (basic assignment is in scope).
+- Running our **own delivery fleet at scale** (3PL partners handle delivery; an own-driver app is only an optional fallback).
+- Advanced multi-order route optimization for the own-driver fallback (basic flow only).
 - Advanced demand forecasting / AI replenishment.
 - Loyalty program engine (basic points only, if any).
 - Payroll / HR management.
@@ -131,7 +132,8 @@ Advertising is a distinct capability with its own console, targeting, and billin
 | **Inventory / Stock Clerk** | Manages stock and receiving. | Stock in/out, goods receipt, stock counts. |
 | **Accountant** | Manages the books. | Ledgers, GST, receivables/payables, reconciliation. |
 | **Online Customer** | Shops the marketplace app across all stores. | One unified catalog, one cart spanning multiple stores, one order/payment, one delivery, order tracking. |
-| **Delivery Driver** | Fulfils a marketplace order end-to-end. | See the assigned order, a **multi-store pickup list** (which items from which store), navigate store-to-store, collect & consolidate, deliver together, capture proof of delivery, track earnings. |
+| **Third-Party Courier (3PL)** | External logistics partner that actually delivers. | Receive a delivery task via API (pickup stores + drop), assign their own rider, share live tracking + status back to the platform. *Not a user of our apps.* |
+| **Delivery Driver (optional own-fleet)** | A store's/platform's own driver, used only when 3PL isn't used. | Own **Driver App**: see the assigned order, a multi-store pickup list, navigate, collect, deliver, capture proof of delivery, track earnings. |
 
 ### 3.2 Role → Permission Matrix (high level)
 | Capability | Super Admin | Owner | Manager | Cashier | Stock Clerk | Accountant |
@@ -185,14 +187,13 @@ Advertising is a distinct capability with its own console, targeting, and billin
 6. Once all parts are ready (or ready enough to start the run), the platform **assigns one driver** for the whole order (see §4.5).
 7. Each store's items post to that store's inventory & accounts; the platform fee accrues per store. The customer gets live status for the single order and can track the driver.
 
-### 4.5 Delivery — Multi-Store Pickup (Driver App)
-1. The platform assigns the marketplace order to an available driver; the driver gets a **push notification**.
-2. The driver's app shows **one order** with a **multi-stop pickup list**: each store's name, address, and the exact items to collect there, plus the customer's delivery address and COD amount (if any).
-3. Driver navigates store-to-store and **collects each store's items**, marking each store's pickup **collected/verified** as they go (all under the same order number).
-4. When all stores are collected, the order becomes **Out for Delivery**; driver makes **one drop** to the customer.
-5. Customer sees live status (and optional driver location) for the single order.
-6. Driver **marks delivered** with **proof of delivery** (OTP, photo, or signature); for COD, records total cash collected for the whole order.
-7. Order closes; each store's portion + any COD posts to accounting; the driver's completed-delivery count/earnings update.
+### 4.5 Delivery — via Third-Party Logistics (3PL)
+1. When the order's store parts are ready, the platform **selects a delivery partner** (by serviceability, price, and ETA) and **books a delivery task** via that partner's API — sending the **pickup points (each store's address + contact)**, the **drop (customer address)**, package details, and COD amount if any.
+2. The 3PL **assigns its own rider** and returns a **tracking reference / tracking URL** and rider details.
+3. The platform **receives status updates** from the partner (via **webhooks** and/or polling): `Rider assigned → At store → Picked up → Out for delivery → Delivered` (+ failures/cancellations), and **relays live tracking** to the customer under the same order number.
+4. On **Delivered**, the partner returns **proof of delivery** (and confirms COD collected, if applicable).
+5. The order closes; each store's portion + delivery fee + any COD posts to accounting; the platform reconciles the courier's delivery charge.
+6. **Fallback:** if no 3PL is serviceable/available (or a store opts for own delivery), the order is dispatched to the **optional own Driver App** flow instead (§5.8).
 
 ---
 
@@ -266,23 +267,47 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **FR-7.8 (P1)** Item unavailability at pick time: substitution, partial fulfilment, or per-item refund — reflected on the parent order.
 - **FR-7.9 (P1)** Manual (phone/WhatsApp) orders can also be captured and, if needed, span stores the same way.
 
-### 5.8 Driver App & Delivery Management (Multi-Store Pickup)
-- **FR-8.1 (P0)** Driver onboarding: platform/store adds a driver (name, phone, vehicle); driver logs into the Driver App.
-- **FR-8.2 (P0)** Driver availability toggle (online/offline) and view of orders assigned to them.
-- **FR-8.3 (P0)** **One assigned order = a multi-stop pickup list**: for each contributing store, show store name, address, and the exact items to collect there; plus the customer's delivery address and total COD to collect.
-- **FR-8.4 (P0)** **Per-store pickup tracking**: driver marks each store's items **collected/verified**; the order can't go out for delivery until **all** stores are collected (or explicitly handled).
-- **FR-8.5 (P0)** Delivery status flow: `Assigned → Accepted → Collecting (per-store) → All-Collected → Out-for-delivery → Delivered` (+ `Failed/Returned`).
-- **FR-8.6 (P0)** **Proof of delivery**: delivery OTP, photo, and/or signature at the single drop.
-- **FR-8.7 (P0)** COD handling: record **total** cash collected for the whole order; reconcile driver cash; allocate collection back to each store part.
-- **FR-8.8 (P0)** Push notifications to the driver on new assignment / changes.
-- **FR-8.9 (P1)** **Maps & turn-by-turn navigation** (Swiggy/Instacart-style) to each store then the customer, via a maps provider (Google Maps Platform / Ola Maps / Mapmyindia). See [DRIVER_APP_INTEGRATIONS.md](DRIVER_APP_INTEGRATIONS.md).
-- **FR-8.10 (P1)** **Optimized multi-store pickup route** (order the stops efficiently) using a Directions/Route-Optimization API.
-- **FR-8.11 (P1)** **Live driver location** streamed to the backend and shown to the customer on a map; **ETA** shown to the customer.
-- **FR-8.12 (P1)** **Geofencing** to auto-detect arrival at a store / the customer and prompt the next action.
-- **FR-8.13 (P1)** Driver dashboard: today's deliveries, stores visited, completed count, and earnings/collections summary.
-- **FR-8.14 (P1)** Failed / partial pickup handling (a store can't fulfil): proceed with available items, flag the missing part, trigger refund/substitution on the parent order.
-- **FR-8.15 (P2)** Batching multiple parent orders and pickup-route optimization across them.
-- **FR-8.16 (P2)** Driver ratings/feedback from customers.
+### 5.8 Delivery Management
+
+Delivery is **primarily fulfilled by third-party logistics (3PL) partners via
+their APIs**. An **optional own-driver app** is a fallback. All delivery
+providers sit behind one internal abstraction (`IDeliveryProvider`) so partners
+can be added/switched without changing order logic. See
+[DELIVERY_INTEGRATIONS.md](DELIVERY_INTEGRATIONS.md).
+
+**A. Third-party logistics (primary)**
+- **FR-8.1 (P0)** **Provider integration** behind a common `IDeliveryProvider`
+  interface: `getQuote`, `createTask`, `cancelTask`, `trackTask`; support ≥1
+  partner at launch (e.g. Porter / Borzo / Shadowfax / Shiprocket).
+- **FR-8.2 (P0)** **Book a delivery task** for a ready order, sending **pickup
+  point(s)** (each contributing store's address + contact), the **drop**
+  (customer address), package size, and COD amount.
+- **FR-8.3 (P0)** **Multi-store pickup**: use a partner/mode that supports
+  **multiple pickup stops** so one rider collects from all stores and delivers
+  together under the same order number. (Fallbacks in DELIVERY_INTEGRATIONS.md §3.)
+- **FR-8.4 (P0)** **Status sync** via partner **webhooks** (and polling fallback):
+  map partner states to `Searching → Rider-assigned → At-store → Picked-up →
+  Out-for-delivery → Delivered` (+ failed/cancelled/returned).
+- **FR-8.5 (P0)** **Live tracking** relayed to the customer (partner tracking
+  URL or rider lat/long on our map) and **ETA**.
+- **FR-8.6 (P0)** **Proof of delivery** captured from the partner (OTP/photo/
+  signature) and stored on the order; COD reconciled with the partner.
+- **FR-8.7 (P1)** **Provider selection / routing**: choose a partner per order by
+  **serviceability, price (quote), and ETA**; auto-**failover** to the next
+  partner if one is unavailable or cancels.
+- **FR-8.8 (P1)** **Delivery-fee handling**: record the courier charge, decide
+  who bears it (customer delivery fee vs store vs platform), and reconcile.
+- **FR-8.9 (P1)** Cancellations/returns and failed-delivery handling reflected on
+  the parent order (refund/substitution triggers).
+- **FR-8.10 (P2)** Rate/ETA comparison across multiple partners before booking.
+
+**B. Own driver app (optional fallback)**
+- **FR-8.11 (P1)** Own-driver onboarding + Driver App with availability toggle.
+- **FR-8.12 (P1)** Assigned order shows a **multi-store pickup list**; driver marks
+  each store **collected**, then one drop; POD + COD capture.
+- **FR-8.13 (P1)** In-app **maps/navigation, live location, geofencing** for the
+  own-driver path (see [DRIVER_APP_INTEGRATIONS.md](DRIVER_APP_INTEGRATIONS.md)).
+- **FR-8.14 (P2)** Own-driver route batching across orders and ratings.
 
 ### 5.9 Accounting
 - **FR-9.1 (P0)** Auto-posting of sales, purchases, returns, and payments to a double-entry ledger.
@@ -363,23 +388,29 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
   - `OrderLine` (belongs to a `StoreOrder`).
   - `OrderStatusHistory`, `StoreOrderStatusHistory`.
   - `Payment` (at the **parent-order** level, one payment for the whole cart).
-- **Delivery/Driver**: `Driver`, `DriverAvailability`, `DeliveryAssignment` (assigns a **parent order** to a driver), `PickupTask` (**one per store** on that order — items to collect at a store + collected status), `DeliveryStatusHistory`, `ProofOfDelivery`, `CODCollection` (total for the order, allocated per `StoreOrder`).
+- **Delivery** (platform-level):
+  - `DeliveryProvider` (a configured 3PL partner + credentials/status), `DeliveryProviderConfig`.
+  - `DeliveryTask` (a booked delivery for a parent order: chosen provider, external task/tracking id, tracking URL, quote/fee, current state).
+  - `PickupPoint` (one per contributing store on the task — address + contact + items).
+  - `DeliveryStatusHistory` (mapped partner status updates), `DeliveryWebhookEvent` (raw inbound events, for idempotency/audit).
+  - `ProofOfDelivery`, `CODCollection` (total for the order, allocated per `StoreOrder`).
+  - *Own-fleet (optional):* `Driver`, `DriverAvailability` — used only when a task is fulfilled by an own driver instead of a 3PL.
 - **Accounting**: `Account` (CoA), `JournalEntry`, `LedgerPosting`, `TaxRate`, `Receivable`, `Payable`.
 - **Notifications**: `NotificationTemplate`, `NotificationLog`.
 
-> **Tenancy note:** `Order`, `Cart`, `DeliveryAssignment`, and the `Driver` pool are **platform-level** (they span stores). `StoreOrder`, `OrderLine`, `PickupTask`, and all catalog/inventory/sales/accounting rows carry a `store_id` and are tenant-filtered — so each store sees only **its own part** of a shared order, never the whole basket or other stores' items.
+> **Tenancy note:** `Order`, `Cart`, `DeliveryTask`, `DeliveryProvider`, and the optional `Driver` pool are **platform-level** (they span stores). `StoreOrder`, `OrderLine`, `PickupPoint`, and all catalog/inventory/sales/accounting rows carry a `store_id` and are tenant-filtered — so each store sees only **its own part** of a shared order, never the whole basket or other stores' items.
 
 ---
 
 ## 8. System Architecture (Conceptual)
-- **Clients (four surfaces over one backend)**:
+- **Clients (surfaces over one backend)**:
   - **Store Management Dashboard** — web/mobile app for POS + operations + delivery dispatch.
   - **Customer Online-Order App** — customer PWA/mobile app: **unified marketplace** catalog, multi-store cart, single checkout, order tracking.
-  - **Driver App** — mobile app for drivers (multi-store pickup list, navigation, proof of delivery).
-  - **Super Admin Console** — platform governance.
-- **Backend**: API services grouped by domain (Auth/Tenancy, Catalog/Inventory, Purchasing, Sales/POS, **Marketplace/Orders**, **Delivery/Dispatch**, Accounting, Monetization/Advertising, Notifications). A **Marketplace service** aggregates all stores' catalog/stock and orchestrates order splitting into per-store parts.
-- **Data**: **MySQL** relational database. **Tenant-scoped** rows (catalog, inventory, `StoreOrder`, sales, accounting) carry `store_id` and are globally filtered; **platform-level** rows (`Order`, `Cart`, `Driver`, `DeliveryAssignment`, advertising) span stores. Object storage for documents/images.
-- **Integrations**: Payment gateway (UPI/cards), SMS/WhatsApp/email providers, GST/e-invoicing (later).
+  - **Super Admin Console** — platform governance (incl. delivery-partner config).
+  - **Driver App** *(optional fallback)* — mobile app for own drivers (multi-store pickup, navigation, POD).
+- **Backend**: API services grouped by domain (Auth/Tenancy, Catalog/Inventory, Purchasing, Sales/POS, **Marketplace/Orders**, **Delivery** (3PL orchestration), Accounting, Monetization/Advertising, Notifications). A **Marketplace service** aggregates all stores' catalog/stock and splits orders into per-store parts; a **Delivery service** selects a 3PL partner, books tasks, and processes their status webhooks — all behind an `IDeliveryProvider` seam.
+- **Data**: **MySQL** relational database. **Tenant-scoped** rows (catalog, inventory, `StoreOrder`, sales, accounting) carry `store_id` and are globally filtered; **platform-level** rows (`Order`, `Cart`, `DeliveryTask`, `DeliveryProvider`, advertising) span stores. Object storage for documents/images.
+- **Integrations**: **3PL delivery partners** (Porter/Borzo/Shadowfax/Shiprocket…) via `IDeliveryProvider`; payment gateway (UPI/cards); maps/location; SMS/WhatsApp/email; GST/e-invoicing (later).
 - **Cross-cutting**: AuthN/AuthZ (RBAC + MFA), audit logging, background jobs (notifications, sync, reports), offline sync for POS.
 
 ### 8.1 Technology Stack
@@ -393,8 +424,9 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 | **Customer Order App** | Responsive web (PWA) first; mobile app later | Consumes the same Web API. |
 | **Driver App** | Mobile (PWA first, native/MAUI later) | Consumes the same Web API; push notifications. |
 | **Real-time** | **SignalR** | Live order status, driver location, dashboard updates. |
-| **Maps & Location (Driver App)** | **Google Maps Platform** (default) or Ola Maps / Mapmyindia | Maps SDK, geocoding, directions, distance-matrix, route optimization; behind an `IMapProvider` seam. See [DRIVER_APP_INTEGRATIONS.md](DRIVER_APP_INTEGRATIONS.md). |
-| **Push notifications** | **FCM** (Android) + **APNs** (iOS) | Driver assignment & status alerts. |
+| **Delivery (3PL)** | **Third-party couriers** — Porter / Borzo / Shadowfax / Shiprocket… | Book task, track, status webhooks, POD/COD; behind an `IDeliveryProvider` seam. See [DELIVERY_INTEGRATIONS.md](DELIVERY_INTEGRATIONS.md). |
+| **Maps & Location** | **Google Maps Platform** (default) or Ola Maps / Mapmyindia | Customer tracking UI + optional own-driver app; behind an `IMapProvider` seam. See [DRIVER_APP_INTEGRATIONS.md](DRIVER_APP_INTEGRATIONS.md). |
+| **Push notifications** | **FCM** (Android) + **APNs** (iOS) | Order & delivery status alerts. |
 | **Background jobs** | **Hangfire** (or `IHostedService`) | Notifications, offline-sync processing, scheduled reports. |
 | **Caching** | In-memory / **Redis** (optional, for scale) | Sessions, hot catalog data. |
 | **API docs** | **Swagger / OpenAPI** (Swashbuckle) | Contract for all client apps. |
@@ -409,22 +441,20 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 - **Payments**: UPI, cards, netbanking, wallets (via gateway); COD.
 - **Messaging**: SMS, WhatsApp Business, Email.
 - **Accounting/Tax**: GST reports now; e-invoicing / e-way bill and Tally export later.
-- **Maps & Location (Driver App — Swiggy/Instacart-style)**: the driver app relies
-  on a maps/location stack rather than any single "Swiggy API" (those are internal).
-  We integrate the same *categories* of service:
-  - **Maps SDK** — render the map in the driver app.
-  - **Geocoding / Reverse geocoding** — store & customer address ↔ lat/long.
-  - **Directions / Routing** — turn-by-turn navigation to each store then the customer.
-  - **Distance Matrix / ETA** — arrival estimates and driver-to-order matching.
-  - **Route optimization** — order the multi-store pickup stops efficiently.
-  - **Live location** — stream the driver's GPS to the backend (SignalR) for
-    customer tracking; **geofencing** to auto-detect arrival at a store/customer.
-  - **Push notifications** — new assignment / status via FCM (Android) & APNs (iOS).
-  - **Recommended provider:** **Google Maps Platform** (what Swiggy/Instacart largely
-    use). **Alternatives:** **Ola Maps** or **MapmyIndia/Mappls** (India, lower cost),
-    **Mapbox**, or **HERE**. See [driver integrations guide](DRIVER_APP_INTEGRATIONS.md).
-- **Third-party logistics (later)**: optionally dispatch to external fleets
-  (e.g. Swiggy Genie / Dunzo-style delivery-as-a-service) instead of own drivers.
+- **Delivery — Third-Party Logistics (3PL, primary)**: delivery is fulfilled by
+  external courier partners via their APIs — **book a task, get a rider, track,
+  receive status webhooks, collect POD/COD**. Candidate partners (India):
+  **Porter, Borzo (ex-WeFast), Shadowfax, Shiprocket (Quick), Pidge, LoadShare,
+  Zypp**; hyperlocal aggregators where available. All sit behind one
+  `IDeliveryProvider` seam so partners can be added/switched or failed-over.
+  See [DELIVERY_INTEGRATIONS.md](DELIVERY_INTEGRATIONS.md).
+- **Maps & Location (customer tracking + optional own-driver app)**: Maps SDK,
+  geocoding, directions, distance-matrix/ETA, route optimization, live location
+  (SignalR), geofencing. Used for customer-side tracking UI and the optional
+  own-driver app. **Provider:** Google Maps Platform (default) or Ola Maps /
+  Mapmyindia (India, lower cost), behind an `IMapProvider` seam. See
+  [DRIVER_APP_INTEGRATIONS.md](DRIVER_APP_INTEGRATIONS.md).
+- **Push notifications**: FCM (Android) + APNs (iOS) for order/delivery updates.
 
 ---
 
@@ -433,8 +463,8 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 |---|---|---|
 | **Phase 0 — Foundation** | Tenancy & onboarding | Registration, approval workflow, RBAC, store provisioning, Super Admin console. |
 | **Phase 1 — Core Operations** | Sell & stock | Catalog/inventory, POS billing, purchase + GRN, basic reports. |
-| **Phase 2 — Online** | Reach customers | Customer order app (storefront, cart/checkout), online payments, order manager. |
-| **Phase 3 — Delivery** | Fulfil at the door | Driver app, delivery dispatch/assignment, proof of delivery, COD reconciliation, live tracking. |
+| **Phase 2 — Online** | Reach customers | Marketplace app (unified catalog, multi-store cart/checkout), online payments, order split + manager. |
+| **Phase 3 — Delivery (3PL)** | Fulfil at the door | Integrate a 3PL partner (quote/book/track), multi-store pickup, status webhooks, live tracking, POD/COD; optional own-driver fallback. |
 | **Phase 4 — Finance** | Books & compliance | Full accounting, GST reports, receivables/payables, exports. |
 | **Phase 5 — Monetize** | Fees & ads | Platform-fee accrual & settlements/payouts, advertiser accounts (stores + brands), ad campaigns/placements in the customer app, advertiser billing. |
 | **Phase 6 — Scale** | Depth & chains | Multi-outlet, offline POS, analytics, route batching, loyalty. |
@@ -449,11 +479,13 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 | Financial posting errors | Wrong books, trust loss | Double-entry, idempotency, reconciliation, audits. |
 | Tenant data leakage | Severe/compliance | Strict tenant isolation, tests, security reviews. |
 | Overselling online vs offline | Customer dissatisfaction | Single shared real-time stock ledger. |
-| One store in a multi-store order can't fulfil | Delayed/partial order | Per-store part status, substitution/partial-refund flow, driver flags missing part at pickup. |
-| Multi-store pickup adds delivery time/cost | Slow delivery, thin margins | Serviceability by area, suggested pickup route, later batching/route optimization. |
+| One store in a multi-store order can't fulfil | Delayed/partial order | Per-store part status, substitution/partial-refund flow; rider flags missing part at pickup. |
+| Multi-store pickup adds delivery time/cost | Slow delivery, thin margins | Serviceability by area, cap stores/order, use multi-stop-capable 3PL, later batching. |
 | Splitting/attribution errors across stores | Wrong store books & fees | `StoreOrder` is the posting unit; per-part accounting and per-part fee accrual with tests. |
-| Driver COD cash leakage | Financial loss | Per-driver COD tracking, mandatory reconciliation, POD required to close orders. |
-| Failed / disputed deliveries | Refund cost, distrust | Proof of delivery (OTP/photo), failed-reason capture, re-attempt/return flow. |
+| 3PL partner outage / no rider | Undeliverable orders | Multi-partner failover, serviceability check before promising delivery, own-driver fallback. |
+| 3PL dependency (pricing/coverage) | Margin & reliability risk | `IDeliveryProvider` seam to add/switch partners; compare quotes; optional own fleet. |
+| COD reconciliation with 3PL | Cash mismatch | Reconcile against partner settlement reports; allocate COD per `StoreOrder`; POD to close. |
+| Webhook loss / duplication | Wrong order status | Signature-verified, idempotent webhooks + polling fallback. |
 | Scope creep | Delayed launch | Strict P0/P1/P2 prioritization and phasing. |
 
 ---
@@ -475,7 +507,10 @@ Revenue module for promoted placements sold to stores and brands (PRD §1.6).
 - **Parent Order**: The single customer order (one order number) that may span multiple stores.
 - **Store Order / Part**: The portion of a parent order belonging to one store — the unit that store fulfils and books.
 - **Pickup Task**: A driver's collection stop at one store for a given parent order.
-- **Multi-Store Pickup**: A driver collecting items from several stores for one order, then making a single delivery.
+- **Multi-Store Pickup**: A rider collecting items from several stores for one order, then making a single delivery.
+- **3PL (Third-Party Logistics)**: An external courier partner (e.g. Porter, Borzo, Shadowfax, Shiprocket) that performs delivery on the platform's behalf via API.
+- **Delivery Task**: A delivery booked with a 3PL partner for a parent order (pickup points + drop, tracking id, fee, status).
+- **Delivery Provider**: A configured 3PL partner integration, exposed to the app through the `IDeliveryProvider` seam.
 - **Tenant**: An isolated store account on the platform.
 - **POS**: Point of Sale (in-store billing).
 - **GRN**: Goods Receipt Note.
