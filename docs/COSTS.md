@@ -33,9 +33,30 @@ grocery (small-value UPI). Everything else is fractions of a rupee.
 | **Maps/location** | Free tiers cover early volume (see below) | ~₹0 early; fractions of ₹ at scale |
 | **Push (FCM/APNs)** | **Free** | ₹0 |
 
-**Takeaway:** on a typical UPI grocery order, **~₹75–120 goes to delivery** and
+**Takeaway:** on a typical UPI grocery order, **~₹45–120 goes to delivery** and
 **almost nothing else**. Decide who bears delivery — customer (delivery fee),
 store, or platform.
+
+### 2.1 Delivery partner comparison (hyperlocal, 2-wheeler, 2026)
+
+| Partner | Base fare | Per km | ~5 km cost | API / tracking | Multi-stop pickup | Notes |
+|---|---|---|---|---|---|---|
+| **Borzo** (ex-WeFast) | **₹35** (≤5 kg) | **₹8/km** | **~₹75** | Yes (webhooks, tracking) | **Yes** (multi-point) | Transparent published rates; good for our multi-store model. |
+| **Shiprocket Quick** | **₹45** | **₹10/km** | ~₹90 | Yes; also aggregates couriers | Via aggregation | **No surge fee**; one integration → many couriers. |
+| **Porter** | from **~₹40–60** (city-based; Delhi ₹60 incl 2 km) | distance-based (varies) | ~₹70–100 | Yes (16 cities, 2-wheeler API, webhooks, live tracking) | Yes | Parking/road-tax add-ons possible; wide coverage. |
+| **Shadowfax** (RocketBox) | weight + distance (quote) | varies | quote | Yes | Varies by product | Strong metro same-day; rate via calculator/sales. |
+| **Pidge / LoadShare / Zypp** | custom | custom | quote | Yes | Varies | City-dependent; EV last-mile (Zypp) can be cheaper. |
+
+**Reading it:** for a ~5 km hyperlocal grocery drop, expect **~₹45–90** on the
+cheaper partners (Borzo, Shiprocket Quick) and a bit more where surge/parking
+apply. Rates rise with distance, weight (>5 kg), extra pickups (our multi-store
+case), and peak-hour surge. **All quote better rate cards at volume** — negotiate
+once you have order flow.
+
+> **Recommendation:** start with **Borzo** (published rates + native multi-point
+> pickup, which fits the multi-store order) or **Shiprocket Quick** (no surge, one
+> integration to many couriers). Keep both behind the `IDeliveryProvider` seam so
+> you can compare live quotes per order and fail over.
 
 ---
 
@@ -100,6 +121,9 @@ economics are the thing to get right.
   https://razorpay.com/learn/upi-transaction-charges/
 - Borzo hyperlocal pricing — https://intercom.help/wefast/en/articles/3046235-hyperlocal-delivery ,
   https://borzodelivery.com/in/api-integration
+- Porter two-wheeler / API — https://porter.in/two-wheelers , https://porter.in/
+- Shiprocket Quick — https://www.shiprocket.in/blog/shiprocket-local-hyperlocal-delivery/
+- Shadowfax rates — https://www.shiprocket.in/blog/shadowfax-courier-charges/
 - MSG91 SMS & WhatsApp — https://msg91.com/in/pricing/sms ,
   https://msg91.com/guide/whatsapp-pricing-update-2026-and-save-with-msg91
 
