@@ -1,0 +1,17 @@
+# .NET build output
+bin/
+obj/
+out/
+
+# Rider / VS
+.idea/
+.vs/
+*.user
+
+# Local config / secrets
+appsettings.*.local.json
+*.Development.local.json
+secrets.json
+
+# EF / SQLite dev artifacts
+*.db

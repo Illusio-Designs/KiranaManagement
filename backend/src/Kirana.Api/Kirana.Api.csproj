@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kirana.Application\Kirana.Application.csproj" />
+    <ProjectReference Include="..\Kirana.Infrastructure\Kirana.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
