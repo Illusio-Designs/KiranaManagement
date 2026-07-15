@@ -21,5 +21,9 @@ backend/
      └─ Kirana.IntegrationTests
 ```
 
-See [../docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md) for setup, packages,
-multi-tenancy, migrations, and the phase-by-phase build order.
+## Guides
+- [STRUCTURE.md](STRUCTURE.md) — detailed backend directory structure: what
+  every project and folder holds, mapped to the PRD domains, plus a request-flow
+  example and conventions.
+- [../docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md) — setup, packages,
+  multi-tenancy, migrations, and the phase-by-phase build order.
