@@ -9,6 +9,11 @@
       <svg class="ic" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>
       <span class="lbl3">Product approvals</span></a>
   </nav></div>
+  <div class="ka-navgroup"><div class="gl">Catalog</div><nav>
+    <a href="adminimages.aspx" data-tip="Catalog images">
+      <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 16l-5-5-6 6"/></svg>
+      <span class="lbl3">Catalog images</span></a>
+  </nav></div>
 </asp:Content>
 <asp:Content ID="cm" ContentPlaceHolderID="main" runat="server">
   <div class="card"><div class="card-h"><h3>Pending stores</h3></div><div class="card-b">

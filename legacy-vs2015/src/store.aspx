@@ -36,7 +36,8 @@
       '<div class="field" style="flex:1;min-width:200px"><label class="lbl">Brand</label><input id="p-brand" class="input"></div></div>'+
       '<div class="row"><div class="field" style="flex:2;min-width:200px"><label class="lbl">Description</label><input id="p-desc" class="input"></div>'+
       '<div class="field" style="flex:1;min-width:170px"><label class="lbl">Category</label><select id="p-cat" class="input"><option value="">Select category…</option><option>Vegetables</option><option>Fruits</option><option>Dairy &amp; Eggs</option><option>Snacks</option><option>Pulses &amp; Grains</option><option>Cooking Essentials</option><option>Household</option><option>Beverages</option></select></div></div>'+
-      '<div class="row"><div class="field" style="flex:2;min-width:220px"><label class="lbl">Image URL (optional)</label><input id="p-img" class="input" placeholder="https://…/apple.jpg" onblur="previewImg()"></div>'+
+      '<div class="row"><div class="field" style="flex:1;min-width:200px"><label class="lbl">Upload image</label><input type="file" id="p-file" accept="image/*" class="input" onchange="uploadFile()"></div>'+
+      '<div class="field" style="flex:2;min-width:220px"><label class="lbl">…or paste an image URL</label><input id="p-img" class="input" placeholder="https://…/apple.jpg" onblur="previewImg()"></div>'+
       '<div class="field"><label class="lbl">Preview</label><div><img id="p-imgprev" style="width:64px;height:64px;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:none"></div></div></div>'+
       '<div id="p-imghint" class="muted" style="font-size:12px;margin:-4px 0 8px"></div>'+
       '<div class="alert" style="font-size:12.5px">New products are <b>submitted for admin approval</b> and go live once approved. Leave the image blank to reuse a shared catalog image for the same product name.</div>'+
@@ -135,6 +136,18 @@
   }catch(e){ document.getElementById('p-out').innerHTML='<div class="alert alert-err">'+e+'</div>'; } }
   function showPrev(u){ var pv=document.getElementById('p-imgprev'); if(!pv)return; if(u){ pv.src=u; pv.style.display='inline-block'; } else { pv.style.display='none'; } }
   function previewImg(){ showPrev(val('p-img')); }
+  async function uploadFile(){
+    var el=document.getElementById('p-file'); var f=el&&el.files?el.files[0]:null; if(!f) return;
+    var hint=document.getElementById('p-imghint'); hint.textContent='Uploading image…';
+    var fd=new FormData(); fd.append('file', f);
+    try{
+      var res=await fetch('/api/uploads/image',{ method:'POST', headers:{ 'X-Auth-Token':KA.token() }, body:fd });
+      var d=await res.json();
+      if(!res.ok){ hint.textContent=(d&&d.error)||'Upload failed'; return; }
+      document.getElementById('p-img').value=d.url; showPrev(d.url);
+      hint.innerHTML='<span class="badge badge-green">Uploaded</span> Image ready — it will be saved for this product.';
+    }catch(e){ hint.textContent='Upload failed'; }
+  }
   async function checkCatalog(){
     var name=val('p-name'); var hint=document.getElementById('p-imghint'); if(!name||!hint) return;
     try{ var m=await KA.api('/api/catalog/image?name='+encodeURIComponent(name));

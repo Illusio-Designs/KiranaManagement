@@ -114,6 +114,12 @@ namespace Kirana.WebApi.Dtos
         public string ImageUrl { get; set; }
     }
 
+    public class UpsertCatalogImageRequest
+    {
+        public string Name { get; set; }
+        public string ImageUrl { get; set; }
+    }
+
     public class ProductVariantDto
     {
         public Guid Id { get; set; }

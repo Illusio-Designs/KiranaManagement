@@ -26,6 +26,11 @@ namespace Kirana.WebApi.Data
             return Send(req, "POST", path, body == null ? "{}" : body.ToString(), token);
         }
 
+        public static JToken Put(HttpRequest req, string path, JObject body, string token)
+        {
+            return Send(req, "PUT", path, body == null ? "{}" : body.ToString(), token);
+        }
+
         private static JToken Send(HttpRequest req, string method, string path, string jsonBody, string token)
         {
             var http = (HttpWebRequest)WebRequest.Create(BaseUrl(req) + path);
