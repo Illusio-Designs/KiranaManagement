@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Web.Http;
 using Kirana.WebApi.Data;
 using Kirana.WebApi.Dtos;
@@ -10,6 +11,15 @@ namespace Kirana.WebApi.Controllers
     [RoutePrefix("api/stores")]
     public class StoresController : ApiController
     {
+        // Returns 401 (as IHttpActionResult) if the caller is not a logged-in SuperAdmin.
+        private IHttpActionResult RequireSuperAdmin()
+        {
+            var user = AuthUtil.GetCurrentUser(Request);
+            if (user == null || user.Role != UserRole.SuperAdmin)
+                return Content(HttpStatusCode.Unauthorized, new { error = "Super admin login required." });
+            return null;
+        }
+
         // POST /api/stores/register
         [HttpPost, Route("register")]
         public IHttpActionResult Register(RegisterStoreRequest req)
@@ -53,10 +63,13 @@ namespace Kirana.WebApi.Controllers
             }
         }
 
-        // GET /api/stores/pending
+        // GET /api/stores/pending  (SuperAdmin only)
         [HttpGet, Route("pending")]
         public IHttpActionResult Pending()
         {
+            var guard = RequireSuperAdmin();
+            if (guard != null) return guard;
+
             using (var db = new KiranaDbContext())
             {
                 var stores = db.Stores
@@ -67,10 +80,13 @@ namespace Kirana.WebApi.Controllers
             }
         }
 
-        // GET /api/stores
+        // GET /api/stores  (SuperAdmin only)
         [HttpGet, Route("")]
         public IHttpActionResult All()
         {
+            var guard = RequireSuperAdmin();
+            if (guard != null) return guard;
+
             using (var db = new KiranaDbContext())
             {
                 var stores = db.Stores.OrderByDescending(s => s.CreatedAt).ToList();
@@ -82,6 +98,9 @@ namespace Kirana.WebApi.Controllers
         [HttpPost, Route("{id:guid}/approve")]
         public IHttpActionResult Approve(Guid id)
         {
+            var guard = RequireSuperAdmin();
+            if (guard != null) return guard;
+
             using (var db = new KiranaDbContext())
             {
                 var store = db.Stores.Find(id);
@@ -101,6 +120,9 @@ namespace Kirana.WebApi.Controllers
         [HttpPost, Route("{id:guid}/reject")]
         public IHttpActionResult Reject(Guid id, RejectRequest req)
         {
+            var guard = RequireSuperAdmin();
+            if (guard != null) return guard;
+
             if (req == null || string.IsNullOrWhiteSpace(req.Reason))
                 return BadRequest("A rejection reason is required.");
 

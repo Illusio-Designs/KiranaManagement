@@ -52,9 +52,10 @@ keeping the folders:
 Kirana.WebApi/
  ├─ Models/        (Enums.cs, Store.cs, User.cs, Product.cs, ProductVariant.cs)
  ├─ Dtos/          (Dtos.cs)
- ├─ Data/          (KiranaDbContext.cs, PasswordHasher.cs)
- ├─ Controllers/   (StoresController.cs, ProductsController.cs)
- └─ index.html     (the web frontend — put this at the project root)
+ ├─ Data/          (KiranaDbContext.cs, PasswordHasher.cs, AuthUtil.cs)
+ ├─ Controllers/   (AuthController.cs, StoresController.cs, ProductsController.cs)
+ └─ *.html         (login.html, register.html, admin.html, store.html, index.html
+                    — put these at the project root)
 ```
 
 In VS: right-click the project → **Add → Existing Item…**, select the files
@@ -80,23 +81,36 @@ Open **`Global.asax.cs`** and add these lines at the **top** of
 `Application_Start()` so the database is created and seeded on first run:
 
 ```csharp
+// Dev: recreate the schema whenever the model changes (wipes data — fine for a course).
 System.Data.Entity.Database.SetInitializer(
-    new System.Data.Entity.CreateDatabaseIfNotExists<Kirana.WebApi.Data.KiranaDbContext>());
+    new System.Data.Entity.DropCreateDatabaseIfModelChanges<Kirana.WebApi.Data.KiranaDbContext>());
 Kirana.WebApi.Data.KiranaDbContext.Seed();
 ```
 
+> Use `DropCreateDatabaseIfModelChanges` during development so that when you add
+> columns (e.g. the login `SessionToken`) the database rebuilds automatically.
+> For a stable database that never drops data, switch to
+> `CreateDatabaseIfNotExists` once the model is final.
+
 ## Step 5 — The web frontend
 
-`index.html` is a **self-contained web UI** (Bootstrap + plain JavaScript `fetch`,
-loaded from a CDN — no build step, no npm). It calls the API on the **same
-origin**, so there's nothing to configure.
+The frontend is a set of **self-contained HTML pages** (Bootstrap + plain
+JavaScript `fetch`, CDN — no build step, no npm). They call the API on the
+**same origin**, so there's nothing to configure. Put all of them at the
+**project root** (same level as `web.config`):
 
-1. Put **`index.html`** at the **project root** (same level as `web.config`).
-2. In Solution Explorer, right-click **`index.html` → Set As Start Page**.
+| Page | Who | Purpose |
+|---|---|---|
+| `login.html` | everyone | Sign in. Redirects by role: Super Admin → `admin.html`, store owner → `store.html`. **Set this as the Start Page.** |
+| `register.html` | public | Store self-registration (status → Pending). |
+| `admin.html` | Super Admin | Approve / reject pending stores (login-protected). |
+| `store.html` | store owner | Add products with variants (MRP / selling price / discount) and list them (login-protected). |
+| `index.html` | — | Just redirects to `login.html`. |
 
-It gives you tabs to: **register a store**, **approve** pending stores, and
-**add products with variants** (showing MRP, selling price, and the derived
-discount) and list them.
+In Solution Explorer, right-click **`login.html` → Set As Start Page**.
+
+**Auth:** login returns a token; the pages store it and send it in the
+`X-Auth-Token` header. Super-admin and store-owner endpoints require it.
 
 > Uses public CDNs for Bootstrap — so an internet connection is needed the first
 > time. To go fully offline, `Install-Package bootstrap` and point the two CDN
@@ -104,20 +118,22 @@ discount) and list them.
 
 ## Step 6 — Run
 
-Press **F5**. The browser opens `index.html` (the frontend). Behind it the API
-serves:
+Press **F5**. The browser opens `login.html`. Behind it the API serves:
 
-- `POST /api/stores/register` — register a store (status Pending)
-- `GET  /api/stores/pending` — list pending stores
-- `POST /api/stores/{id}/approve` · `POST /api/stores/{id}/reject`
-- `POST /api/products` — create a product with variants (MRP + selling price)
-- `GET  /api/products?storeId={id}` — list a store's products
+- `POST /api/auth/login` — sign in (returns a token)
+- `POST /api/stores/register` — register a store (public, status Pending)
+- `GET  /api/stores/pending` · `POST /api/stores/{id}/approve` · `.../reject` — **SuperAdmin only**
+- `POST /api/products` · `GET /api/products` — **store owner only** (uses their own store)
 
-You can also test the API directly with **Postman** or **curl**. (No Swagger in
-this template; optionally `Install-Package Swashbuckle` to add it.)
+You can also test the API with **Postman**/**curl** (send `X-Auth-Token` for the
+protected endpoints).
 
-**First flow:** Register a store → copy the returned **Store Id** → Approvals tab
-→ Approve → Products tab → paste the Store Id, add a product with variants.
+**Full flow to demo:**
+1. `register.html` — register a store → it's **Pending**.
+2. `login.html` — sign in as **Super Admin** (`superadmin@kirana.local` /
+   `Admin@12345`) → `admin.html` → **Approve** the store.
+3. `login.html` — sign in as the **store owner** (the email/password used at
+   registration) → `store.html` → add products with variants.
 
 ---
 

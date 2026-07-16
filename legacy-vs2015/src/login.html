@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login · KiranaManagement</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+<div class="container" style="max-width:420px">
+  <div class="text-center mt-5 mb-3"><h3>🛒 KiranaManagement</h3><div class="text-muted">Sign in</div></div>
+  <div class="card"><div class="card-body">
+    <input id="email" class="form-control mb-2" placeholder="Email">
+    <input id="pass" type="password" class="form-control mb-3" placeholder="Password">
+    <button class="btn btn-primary w-100" onclick="login()">Login</button>
+    <div id="out" class="mt-2"></div>
+    <hr>
+    <div class="text-center">New store? <a href="register.html">Register here</a></div>
+    <div class="text-center text-muted small mt-2">Super Admin: superadmin@kirana.local / Admin@12345</div>
+  </div></div>
+</div>
+<script>
+async function login(){
+  const out = document.getElementById('out');
+  try{
+    const res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: email.value.trim(), password: pass.value })
+    });
+    const data = await res.json();
+    if(!res.ok) throw (data.error || 'Login failed');
+    localStorage.setItem('kirana_token', data.token);
+    localStorage.setItem('kirana_role', data.role);
+    localStorage.setItem('kirana_name', data.fullName || '');
+    localStorage.setItem('kirana_store', data.storeId || '');
+    if(data.role === 'SuperAdmin') location.href = 'admin.html';
+    else location.href = 'store.html';
+  }catch(e){ out.innerHTML = '<div class="alert alert-danger py-2 mb-0">'+e+'</div>'; }
+}
+</script>
+</body>
+</html>

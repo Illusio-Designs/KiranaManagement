@@ -39,6 +39,22 @@ namespace Kirana.WebApi.Dtos
         public string Reason { get; set; }
     }
 
+    // ----- Auth -----
+    public class LoginRequest
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+    public class LoginResponse
+    {
+        public string Token { get; set; }
+        public string Role { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public Guid? StoreId { get; set; }
+    }
+
     // ----- Catalog -----
     public class CreateVariantRequest
     {

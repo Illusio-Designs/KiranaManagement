@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.Net;
 using System.Web.Http;
 using Kirana.WebApi.Data;
 using Kirana.WebApi.Dtos;
@@ -12,14 +13,34 @@ namespace Kirana.WebApi.Controllers
     [RoutePrefix("api/products")]
     public class ProductsController : ApiController
     {
-        // POST /api/products
+        // Returns the logged-in store owner/manager, or null (with a 401 in 'error').
+        private User CurrentStoreUser(out IHttpActionResult error)
+        {
+            error = null;
+            var user = AuthUtil.GetCurrentUser(Request);
+            if (user == null || (user.Role != UserRole.Owner && user.Role != UserRole.Manager))
+            {
+                error = Content(HttpStatusCode.Unauthorized, new { error = "Store owner login required." });
+                return null;
+            }
+            if (!user.StoreId.HasValue)
+            {
+                error = Content(HttpStatusCode.BadRequest, new { error = "This account is not linked to a store." });
+                return null;
+            }
+            return user;
+        }
+
+        // POST /api/products  (owner/manager; uses their own store)
         [HttpPost, Route("")]
         public IHttpActionResult Create(CreateProductRequest req)
         {
+            IHttpActionResult error;
+            var user = CurrentStoreUser(out error);
+            if (error != null) return error;
+
             if (req == null || string.IsNullOrWhiteSpace(req.Name))
                 return BadRequest("Product name is required.");
-            if (req.StoreId == Guid.Empty)
-                return BadRequest("StoreId is required.");
             if (req.Variants == null || req.Variants.Count == 0)
                 return BadRequest("A product needs at least one variant.");
 
@@ -30,11 +51,13 @@ namespace Kirana.WebApi.Controllers
                 if (v.SellingPrice > v.Mrp) return BadRequest("Selling price cannot exceed MRP.");
             }
 
+            var storeId = user.StoreId.Value;
+
             using (var db = new KiranaDbContext())
             {
                 var product = new Product
                 {
-                    StoreId = req.StoreId,
+                    StoreId = storeId,
                     Name = req.Name.Trim(),
                     Description = req.Description,
                     Brand = req.Brand
@@ -44,7 +67,7 @@ namespace Kirana.WebApi.Controllers
                 {
                     product.Variants.Add(new ProductVariant
                     {
-                        StoreId = req.StoreId,
+                        StoreId = storeId,
                         Name = (v.Name ?? "").Trim(),
                         Sku = v.Sku,
                         Barcode = v.Barcode,
@@ -64,10 +87,16 @@ namespace Kirana.WebApi.Controllers
             }
         }
 
-        // GET /api/products?storeId={guid}
+        // GET /api/products  (owner/manager; lists their own store's products)
         [HttpGet, Route("")]
-        public IHttpActionResult List(Guid storeId)
+        public IHttpActionResult List()
         {
+            IHttpActionResult error;
+            var user = CurrentStoreUser(out error);
+            if (error != null) return error;
+
+            var storeId = user.StoreId.Value;
+
             using (var db = new KiranaDbContext())
             {
                 var products = db.Products

@@ -31,5 +31,10 @@ namespace Kirana.WebApi.Models
 
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        // Simple session token issued on login and sent back in the
+        // X-Auth-Token header (course-friendly auth, no OWIN needed).
+        [MaxLength(64)]
+        public string SessionToken { get; set; }
     }
 }
