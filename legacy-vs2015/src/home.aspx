@@ -23,12 +23,12 @@
       <div class="cta"><a href="shop.aspx" class="btn btn-brand btn-lg">Shop Now <svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
         <a href="shop.aspx" class="btn btn-outline btn-lg">Explore Deals</a></div>
       <div class="trust">
-        <div class="t"><span class="iconcircle sm"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.7"/><circle cx="17" cy="18" r="1.7"/></svg></span><div><b>Free Delivery</b><span>On orders above ₹199</span></div></div>
+        <div class="t"><span class="iconcircle sm"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.7"/><circle cx="17" cy="18" r="1.7"/></svg></span><div><b>Free Delivery</b><span>On orders above &#8377;199</span></div></div>
         <div class="t"><span class="iconcircle sm mint"><svg class="ic" viewBox="0 0 24 24"><path d="M20 12l-8 8-8-8V4h8z"/><circle cx="8.5" cy="8.5" r="1.3"/></svg></span><div><b>Best Prices</b><span>Affordable every day</span></div></div>
         <div class="t"><span class="iconcircle sm amber"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><b>Fresh Quality</b><span>100% guaranteed</span></div></div>
       </div>
     </div>
-    <div class="hero-art"><div class="wave"></div><div class="bag">🛍️</div>
+    <div class="hero-art"><div class="wave"></div><div class="bag"><svg class="ic" style="width:170px;height:170px;color:var(--green-2)" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>
       <div class="offbubble"><span>UP TO</span><b>50%</b><em>OFF</em></div></div>
   </div></section>
 

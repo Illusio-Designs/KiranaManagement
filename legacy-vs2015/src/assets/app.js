@@ -31,7 +31,7 @@ var KA = (function () {
     return data;
   }
 
-  function money(n) { return '₹' + (Number(n) || 0).toFixed(2); }
+  function money(n) { return '\u20B9' + (Number(n) || 0).toFixed(2); }
 
   function toast(msg, type) {
     var wrap = document.getElementById('ka-toast');
