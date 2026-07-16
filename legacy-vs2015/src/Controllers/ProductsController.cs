@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Net;
 using System.Web.Http;
 using Kirana.WebApi.Data;
 using Kirana.WebApi.Dtos;
@@ -11,33 +10,14 @@ using Kirana.WebApi.Models;
 namespace Kirana.WebApi.Controllers
 {
     [RoutePrefix("api/products")]
-    public class ProductsController : ApiController
+    public class ProductsController : StoreApiController
     {
-        // Returns the logged-in store owner/manager, or null (with a 401 in 'error').
-        private User CurrentStoreUser(out IHttpActionResult error)
-        {
-            error = null;
-            var user = AuthUtil.GetCurrentUser(Request);
-            if (user == null || (user.Role != UserRole.Owner && user.Role != UserRole.Manager))
-            {
-                error = Content(HttpStatusCode.Unauthorized, new { error = "Store owner login required." });
-                return null;
-            }
-            if (!user.StoreId.HasValue)
-            {
-                error = Content(HttpStatusCode.BadRequest, new { error = "This account is not linked to a store." });
-                return null;
-            }
-            return user;
-        }
-
-        // POST /api/products  (owner/manager; uses their own store)
+        // POST /api/products
         [HttpPost, Route("")]
         public IHttpActionResult Create(CreateProductRequest req)
         {
-            IHttpActionResult error;
-            var user = CurrentStoreUser(out error);
-            if (error != null) return error;
+            var guard = EnsureStoreUser();
+            if (guard != null) return guard;
 
             if (req == null || string.IsNullOrWhiteSpace(req.Name))
                 return BadRequest("Product name is required.");
@@ -51,13 +31,11 @@ namespace Kirana.WebApi.Controllers
                 if (v.SellingPrice > v.Mrp) return BadRequest("Selling price cannot exceed MRP.");
             }
 
-            var storeId = user.StoreId.Value;
-
             using (var db = new KiranaDbContext())
             {
                 var product = new Product
                 {
-                    StoreId = storeId,
+                    StoreId = CurrentStoreId,
                     Name = req.Name.Trim(),
                     Description = req.Description,
                     Brand = req.Brand
@@ -67,7 +45,7 @@ namespace Kirana.WebApi.Controllers
                 {
                     product.Variants.Add(new ProductVariant
                     {
-                        StoreId = storeId,
+                        StoreId = CurrentStoreId,
                         Name = (v.Name ?? "").Trim(),
                         Sku = v.Sku,
                         Barcode = v.Barcode,
@@ -87,24 +65,72 @@ namespace Kirana.WebApi.Controllers
             }
         }
 
-        // GET /api/products  (owner/manager; lists their own store's products)
+        // GET /api/products
         [HttpGet, Route("")]
         public IHttpActionResult List()
         {
-            IHttpActionResult error;
-            var user = CurrentStoreUser(out error);
-            if (error != null) return error;
-
-            var storeId = user.StoreId.Value;
+            var guard = EnsureStoreUser();
+            if (guard != null) return guard;
 
             using (var db = new KiranaDbContext())
             {
                 var products = db.Products
                     .Include(p => p.Variants)
-                    .Where(p => p.StoreId == storeId)
+                    .Where(p => p.StoreId == CurrentStoreId)
                     .OrderBy(p => p.Name)
                     .ToList();
                 return Ok(products.Select(ToDto).ToList());
+            }
+        }
+
+        // POST /api/products/variants/{id}/adjust  (inventory stock change)
+        [HttpPost, Route("variants/{variantId:guid}/adjust")]
+        public IHttpActionResult AdjustStock(Guid variantId, AdjustStockRequest req)
+        {
+            var guard = EnsureStoreUser();
+            if (guard != null) return guard;
+            if (req == null || req.ChangeQuantity == 0)
+                return BadRequest("Change quantity cannot be zero.");
+
+            using (var db = new KiranaDbContext())
+            {
+                var variant = db.ProductVariants.FirstOrDefault(v => v.Id == variantId && v.StoreId == CurrentStoreId);
+                if (variant == null) return NotFound();
+
+                var newBalance = variant.StockQuantity + req.ChangeQuantity;
+                if (newBalance < 0)
+                    return BadRequest("Insufficient stock for this adjustment.");
+
+                variant.StockQuantity = newBalance;
+                db.SaveChanges();
+                return Ok(new { variantId = variant.Id, stockQuantity = variant.StockQuantity });
+            }
+        }
+
+        // GET /api/products/low-stock
+        [HttpGet, Route("low-stock")]
+        public IHttpActionResult LowStock()
+        {
+            var guard = EnsureStoreUser();
+            if (guard != null) return guard;
+
+            using (var db = new KiranaDbContext())
+            {
+                var items = db.ProductVariants
+                    .Where(v => v.StoreId == CurrentStoreId && v.IsActive && v.StockQuantity <= v.ReorderLevel)
+                    .Include(v => v.Product)
+                    .OrderBy(v => v.StockQuantity)
+                    .ToList()
+                    .Select(v => new LowStockItemDto
+                    {
+                        VariantId = v.Id,
+                        ProductName = v.Product != null ? v.Product.Name : "",
+                        VariantName = v.Name,
+                        StockQuantity = v.StockQuantity,
+                        ReorderLevel = v.ReorderLevel
+                    })
+                    .ToList();
+                return Ok(items);
             }
         }
 

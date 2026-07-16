@@ -30,4 +30,19 @@ namespace Kirana.WebApi.Models
         Litre = 5,
         Dozen = 6
     }
+
+    public enum PaymentMode
+    {
+        Cash = 0,
+        Upi = 1,
+        Card = 2,
+        Wallet = 3
+    }
+
+    public enum PurchaseStatus
+    {
+        Draft = 0,
+        Received = 1,
+        Cancelled = 2
+    }
 }

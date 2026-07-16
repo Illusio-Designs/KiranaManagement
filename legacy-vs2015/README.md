@@ -50,13 +50,23 @@ keeping the folders:
 
 ```
 Kirana.WebApi/
- ├─ Models/        (Enums.cs, Store.cs, User.cs, Product.cs, ProductVariant.cs)
+ ├─ Models/        (Enums, Store, User, Product, ProductVariant, Sales, Purchasing)
  ├─ Dtos/          (Dtos.cs)
  ├─ Data/          (KiranaDbContext.cs, PasswordHasher.cs, AuthUtil.cs)
- ├─ Controllers/   (AuthController.cs, StoresController.cs, ProductsController.cs)
+ ├─ Controllers/   (StoreApiController, AuthController, StoresController,
+ │                  ProductsController, SalesController, PurchasesController)
  └─ *.html         (login.html, register.html, admin.html, store.html, index.html
                     — put these at the project root)
 ```
+
+Store-owner API (all require the `X-Auth-Token` header):
+- **Catalog:** `POST/GET /api/products`
+- **Inventory:** `POST /api/products/variants/{id}/adjust`, `GET /api/products/low-stock`
+- **POS:** `POST/GET /api/sales`
+- **Purchases:** `POST/GET /api/purchases/suppliers`, `POST/GET /api/purchases/orders`,
+  `POST /api/purchases/orders/{id}/receive`
+
+The **store dashboard** (`store.html`) has tabs for Products, Inventory, POS, and Purchases.
 
 In VS: right-click the project → **Add → Existing Item…**, select the files
 (or drag them from Explorer into the Solution Explorer). Make sure the

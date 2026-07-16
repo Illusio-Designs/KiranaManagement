@@ -6,9 +6,8 @@
   <title>My Store · KiranaManagement</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
-<body>
+<body class="bg-light">
 <script>
-  // Guard: only a logged-in store Owner/Manager may view this page.
   const TOKEN = localStorage.getItem('kirana_token');
   const ROLE = localStorage.getItem('kirana_role');
   if(!TOKEN || (ROLE !== 'Owner' && ROLE !== 'Manager')) location.href = 'login.html';
@@ -18,30 +17,104 @@
     <span><span class="text-white-50 me-3" id="who"></span>
     <button class="btn btn-sm btn-outline-light" onclick="logout()">Logout</button></span></div>
 </nav>
-<div class="container mt-3">
-  <div class="card"><div class="card-body">
-    <h5 class="card-title">Add a product (with variants)</h5>
-    <div class="row g-2">
-      <div class="col-md-6"><input id="p-name" class="form-control" placeholder="Product name"></div>
-      <div class="col-md-6"><input id="p-brand" class="form-control" placeholder="Brand (optional)"></div>
-      <div class="col-md-12"><input id="p-desc" class="form-control" placeholder="Description (optional)"></div>
+
+<div class="container my-3">
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-prod" type="button">Products</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-inv" type="button" onclick="loadLowStock()">Inventory</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pos" type="button" onclick="posInit()">POS / Billing</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pur" type="button" onclick="purInit()">Purchases</button></li>
+  </ul>
+  <div class="tab-content bg-white border border-top-0 p-3">
+
+    <!-- PRODUCTS -->
+    <div class="tab-pane fade show active" id="t-prod">
+      <h5>Add a product (with variants)</h5>
+      <div class="row g-2">
+        <div class="col-md-6"><input id="p-name" class="form-control" placeholder="Product name"></div>
+        <div class="col-md-6"><input id="p-brand" class="form-control" placeholder="Brand (optional)"></div>
+        <div class="col-md-12"><input id="p-desc" class="form-control" placeholder="Description (optional)"></div>
+      </div>
+      <h6 class="mt-3">Variants</h6>
+      <div id="variants"></div>
+      <button class="btn btn-sm btn-outline-primary mt-2" onclick="addVariantRow()">+ Add variant</button>
+      <div><button class="btn btn-success mt-3" onclick="createProduct()">Save product</button></div>
+      <div id="p-out" class="mt-2"></div>
+      <hr>
+      <h5 class="d-flex justify-content-between">My products
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadProducts()">Refresh</button></h5>
+      <div id="product-list"></div>
     </div>
-    <h6 class="mt-3">Variants</h6>
-    <div id="variants"></div>
-    <button class="btn btn-sm btn-outline-primary mt-2" onclick="addVariantRow()">+ Add variant</button>
-    <div><button class="btn btn-success mt-3" onclick="createProduct()">Save product</button></div>
-    <div id="p-out" class="mt-2"></div>
-    <hr>
-    <h5 class="card-title d-flex justify-content-between">My products
-      <button class="btn btn-sm btn-outline-secondary" onclick="loadProducts()">Refresh</button></h5>
-    <div id="product-list"></div>
-  </div></div>
+
+    <!-- INVENTORY -->
+    <div class="tab-pane fade" id="t-inv">
+      <h5>Adjust stock</h5>
+      <div class="row g-2">
+        <div class="col-md-5"><select id="inv-variant" class="form-select"></select></div>
+        <div class="col-md-3"><input id="inv-change" type="number" class="form-control" placeholder="Change (+/-)"></div>
+        <div class="col-md-3"><input id="inv-reason" class="form-control" placeholder="Reason"></div>
+        <div class="col-md-1"><button class="btn btn-primary w-100" onclick="adjustStock()">Go</button></div>
+      </div>
+      <div id="inv-out" class="mt-2"></div>
+      <hr>
+      <h5 class="d-flex justify-content-between">Low stock
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadLowStock()">Refresh</button></h5>
+      <div id="low-list"></div>
+    </div>
+
+    <!-- POS -->
+    <div class="tab-pane fade" id="t-pos">
+      <h5>New sale</h5>
+      <div id="pos-lines"></div>
+      <button class="btn btn-sm btn-outline-primary mt-2" onclick="posAddLine()">+ Add item</button>
+      <div class="row g-2 mt-2">
+        <div class="col-md-4"><input id="pos-customer" class="form-control" placeholder="Customer (optional)"></div>
+        <div class="col-md-4"><select id="pos-pay" class="form-select">
+          <option value="0">Cash</option><option value="1">UPI</option><option value="2">Card</option><option value="3">Wallet</option></select></div>
+        <div class="col-md-4"><input id="pos-paid" type="number" class="form-control" placeholder="Amount paid (optional)"></div>
+      </div>
+      <button class="btn btn-success mt-3" onclick="completeSale()">Complete sale</button>
+      <div id="pos-out" class="mt-2"></div>
+      <hr>
+      <h5 class="d-flex justify-content-between">Recent sales
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadSales()">Refresh</button></h5>
+      <div id="sales-list"></div>
+    </div>
+
+    <!-- PURCHASES -->
+    <div class="tab-pane fade" id="t-pur">
+      <h5>Add supplier</h5>
+      <div class="row g-2">
+        <div class="col-md-3"><input id="sup-name" class="form-control" placeholder="Name"></div>
+        <div class="col-md-3"><input id="sup-phone" class="form-control" placeholder="Phone"></div>
+        <div class="col-md-3"><input id="sup-email" class="form-control" placeholder="Email"></div>
+        <div class="col-md-2"><input id="sup-gstin" class="form-control" placeholder="GSTIN"></div>
+        <div class="col-md-1"><button class="btn btn-primary w-100" onclick="createSupplier()">Add</button></div>
+      </div>
+      <div id="sup-out" class="mt-2"></div>
+      <hr>
+      <h5>New purchase order</h5>
+      <div class="row g-2"><div class="col-md-6"><select id="po-supplier" class="form-select"></select></div></div>
+      <div id="po-lines" class="mt-2"></div>
+      <button class="btn btn-sm btn-outline-primary mt-2" onclick="poAddLine()">+ Add item</button>
+      <div><button class="btn btn-success mt-3" onclick="createPO()">Create PO</button></div>
+      <div id="po-out" class="mt-2"></div>
+      <hr>
+      <h5 class="d-flex justify-content-between">Purchase orders
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadPOs()">Refresh</button></h5>
+      <div id="po-list"></div>
+    </div>
+
+  </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.getElementById('who').textContent = localStorage.getItem('kirana_name') || '';
 function hdr(){ return { 'Content-Type':'application/json', 'X-Auth-Token': TOKEN }; }
 function logout(){ localStorage.clear(); location.href='login.html'; }
 function v(id){ return document.getElementById(id).value.trim(); }
+function msg(id, ok, m){ document.getElementById(id).innerHTML='<div class="alert alert-'+(ok?'success':'danger')+' py-2 mb-0">'+m+'</div>'; }
 
 async function api(path, method, body){
   const res = await fetch(path, { method: method||'GET', headers: hdr(), body: body?JSON.stringify(body):undefined });
@@ -51,11 +124,20 @@ async function api(path, method, body){
   return data;
 }
 
+// ---- shared variant cache (for dropdowns) ----
+let VARIANTS = [];
+async function refreshVariants(){
+  const products = await api('/api/products');
+  VARIANTS = [];
+  (products||[]).forEach(p => (p.variants||[]).forEach(x =>
+    VARIANTS.push({ id:x.id, label: p.name+' — '+x.name+' (stock '+x.stockQuantity+')', price:x.sellingPrice })));
+}
+function variantOptions(){ return VARIANTS.map(x=>'<option value="'+x.id+'">'+x.label+'</option>').join(''); }
+
+// ================= PRODUCTS =================
 function addVariantRow(){
-  const d = document.createElement('div');
-  d.className='row g-1 mb-1 variant-row';
-  d.innerHTML =
-    '<div class="col"><input class="form-control form-control-sm v-name" placeholder="Name e.g. 1 kg"></div>'+
+  const d=document.createElement('div'); d.className='row g-1 mb-1 variant-row';
+  d.innerHTML='<div class="col"><input class="form-control form-control-sm v-name" placeholder="Name e.g. 1 kg"></div>'+
     '<div class="col"><input class="form-control form-control-sm v-sku" placeholder="SKU"></div>'+
     '<div class="col"><input type="number" class="form-control form-control-sm v-mrp" placeholder="MRP"></div>'+
     '<div class="col"><input type="number" class="form-control form-control-sm v-sell" placeholder="Selling"></div>'+
@@ -63,43 +145,129 @@ function addVariantRow(){
     '<div class="col"><input type="number" class="form-control form-control-sm v-stock" placeholder="Stock"></div>';
   document.getElementById('variants').appendChild(d);
 }
-
 async function createProduct(){
-  const out = document.getElementById('p-out');
   try{
     const rows = Array.from(document.querySelectorAll('.variant-row')).map(r=>({
-      name: r.querySelector('.v-name').value, sku: r.querySelector('.v-sku').value,
-      unit: 0, packSize: 1,
-      mrp: parseFloat(r.querySelector('.v-mrp').value)||0,
-      sellingPrice: parseFloat(r.querySelector('.v-sell').value)||0,
-      taxRatePercent: parseFloat(r.querySelector('.v-tax').value)||0,
-      stockQuantity: parseInt(r.querySelector('.v-stock').value)||0, reorderLevel: 0
-    }));
-    if(!rows.length){ out.innerHTML='<div class="alert alert-danger py-2 mb-0">Add at least one variant.</div>'; return; }
-    const p = await api('/api/products','POST',{ name:v('p-name'), brand:v('p-brand'), description:v('p-desc'), variants: rows });
-    out.innerHTML = '<div class="alert alert-success py-2 mb-0">Saved <b>'+p.name+'</b> with '+p.variants.length+' variant(s).</div>';
-    loadProducts();
-  }catch(e){ out.innerHTML='<div class="alert alert-danger py-2 mb-0">'+e+'</div>'; }
+      name:r.querySelector('.v-name').value, sku:r.querySelector('.v-sku').value, unit:0, packSize:1,
+      mrp:parseFloat(r.querySelector('.v-mrp').value)||0, sellingPrice:parseFloat(r.querySelector('.v-sell').value)||0,
+      taxRatePercent:parseFloat(r.querySelector('.v-tax').value)||0, stockQuantity:parseInt(r.querySelector('.v-stock').value)||0, reorderLevel:0 }));
+    if(!rows.length){ msg('p-out',false,'Add at least one variant.'); return; }
+    const p = await api('/api/products','POST',{ name:v('p-name'), brand:v('p-brand'), description:v('p-desc'), variants:rows });
+    msg('p-out',true,'Saved <b>'+p.name+'</b> with '+p.variants.length+' variant(s).');
+    loadProducts(); refreshVariants();
+  }catch(e){ msg('p-out',false,e); }
 }
-
 async function loadProducts(){
   try{
     const list = await api('/api/products');
-    if(!list || !list.length){ document.getElementById('product-list').innerHTML='<p class="text-muted">No products yet.</p>'; return; }
-    let h='';
-    list.forEach(p=>{
-      h += '<div class="border rounded p-2 mb-2"><strong>'+p.name+'</strong> '+(p.brand?('· '+p.brand):'')+
-        '<table class="table table-sm mt-2 mb-0"><thead><tr><th>Variant</th><th>MRP</th><th>Selling</th><th>Discount</th><th>Stock</th></tr></thead><tbody>';
-      p.variants.forEach(x=>{ h += '<tr><td>'+x.name+'</td><td>₹'+x.mrp+'</td><td>₹'+x.sellingPrice+
-        '</td><td>₹'+x.discountAmount+' ('+x.discountPercent+'%)</td><td>'+x.stockQuantity+'</td></tr>'; });
-      h += '</tbody></table></div>';
-    });
-    document.getElementById('product-list').innerHTML = h;
+    if(!list||!list.length){ document.getElementById('product-list').innerHTML='<p class="text-muted">No products yet.</p>'; return; }
+    let h=''; list.forEach(p=>{ h+='<div class="border rounded p-2 mb-2"><strong>'+p.name+'</strong> '+(p.brand?('· '+p.brand):'')+
+      '<table class="table table-sm mt-2 mb-0"><thead><tr><th>Variant</th><th>MRP</th><th>Selling</th><th>Discount</th><th>Stock</th></tr></thead><tbody>';
+      p.variants.forEach(x=>{ h+='<tr><td>'+x.name+'</td><td>₹'+x.mrp+'</td><td>₹'+x.sellingPrice+'</td><td>₹'+x.discountAmount+' ('+x.discountPercent+'%)</td><td>'+x.stockQuantity+'</td></tr>'; });
+      h+='</tbody></table></div>'; });
+    document.getElementById('product-list').innerHTML=h;
   }catch(e){ document.getElementById('product-list').innerHTML='<div class="alert alert-danger py-2">'+e+'</div>'; }
 }
 
-addVariantRow();
-loadProducts();
+// ================= INVENTORY =================
+async function invFillSelect(){ await refreshVariants(); document.getElementById('inv-variant').innerHTML=variantOptions(); }
+async function adjustStock(){
+  try{
+    const id=document.getElementById('inv-variant').value;
+    const change=parseInt(v('inv-change'))||0;
+    await api('/api/products/variants/'+id+'/adjust','POST',{ changeQuantity:change, reason:v('inv-reason') });
+    msg('inv-out',true,'Stock updated.'); loadLowStock(); invFillSelect();
+  }catch(e){ msg('inv-out',false,e); }
+}
+async function loadLowStock(){
+  try{
+    await invFillSelect();
+    const list = await api('/api/products/low-stock');
+    if(!list||!list.length){ document.getElementById('low-list').innerHTML='<p class="text-muted">Nothing low on stock. 👍</p>'; return; }
+    let h='<table class="table table-sm"><thead><tr><th>Product</th><th>Variant</th><th>Stock</th><th>Reorder at</th></tr></thead><tbody>';
+    list.forEach(x=>{ h+='<tr class="table-warning"><td>'+x.productName+'</td><td>'+x.variantName+'</td><td>'+x.stockQuantity+'</td><td>'+x.reorderLevel+'</td></tr>'; });
+    document.getElementById('low-list').innerHTML=h+'</tbody></table>';
+  }catch(e){ document.getElementById('low-list').innerHTML='<div class="alert alert-danger py-2">'+e+'</div>'; }
+}
+
+// ================= POS =================
+async function posInit(){ await refreshVariants(); if(!document.querySelectorAll('.pos-line').length) posAddLine(); }
+function posAddLine(){
+  const d=document.createElement('div'); d.className='row g-1 mb-1 pos-line';
+  d.innerHTML='<div class="col-8"><select class="form-select form-select-sm pos-v">'+variantOptions()+'</select></div>'+
+    '<div class="col-3"><input type="number" class="form-control form-control-sm pos-q" placeholder="Qty" value="1"></div>'+
+    '<div class="col-1"><button class="btn btn-sm btn-outline-danger w-100" onclick="this.closest(\'.pos-line\').remove()">×</button></div>';
+  document.getElementById('pos-lines').appendChild(d);
+}
+async function completeSale(){
+  try{
+    const lines = Array.from(document.querySelectorAll('.pos-line')).map(r=>({
+      productVariantId:r.querySelector('.pos-v').value, quantity:parseInt(r.querySelector('.pos-q').value)||0 }))
+      .filter(l=>l.quantity>0);
+    if(!lines.length){ msg('pos-out',false,'Add at least one item.'); return; }
+    const paidStr=v('pos-paid');
+    const body={ customerName:v('pos-customer'), paymentMode:parseInt(document.getElementById('pos-pay').value), lines:lines };
+    if(paidStr!=='') body.amountPaid=parseFloat(paidStr);
+    const s = await api('/api/sales','POST',body);
+    msg('pos-out',true,'Invoice <b>'+s.invoiceNumber+'</b> — Total ₹'+s.grandTotal+' (tax ₹'+s.taxTotal+', discount ₹'+s.discountTotal+', change ₹'+s.changeDue+')');
+    document.getElementById('pos-lines').innerHTML=''; posAddLine(); loadSales(); refreshVariants();
+  }catch(e){ msg('pos-out',false,e); }
+}
+async function loadSales(){
+  try{
+    const list = await api('/api/sales');
+    if(!list||!list.length){ document.getElementById('sales-list').innerHTML='<p class="text-muted">No sales yet.</p>'; return; }
+    let h='<table class="table table-sm"><thead><tr><th>Invoice</th><th>Items</th><th>Total</th><th>Pay</th><th>When</th></tr></thead><tbody>';
+    list.forEach(s=>{ h+='<tr><td>'+s.invoiceNumber+'</td><td>'+s.lines.length+'</td><td>₹'+s.grandTotal+'</td><td>'+s.paymentMode+'</td><td>'+new Date(s.createdAt).toLocaleString()+'</td></tr>'; });
+    document.getElementById('sales-list').innerHTML=h+'</tbody></table>';
+  }catch(e){ document.getElementById('sales-list').innerHTML='<div class="alert alert-danger py-2">'+e+'</div>'; }
+}
+
+// ================= PURCHASES =================
+let SUPPLIERS=[];
+async function purInit(){ await refreshVariants(); await loadSuppliers(); if(!document.querySelectorAll('.po-line').length) poAddLine(); loadPOs(); }
+async function createSupplier(){
+  try{ await api('/api/purchases/suppliers','POST',{ name:v('sup-name'), phone:v('sup-phone'), email:v('sup-email'), gstin:v('sup-gstin') });
+    msg('sup-out',true,'Supplier added.'); loadSuppliers();
+  }catch(e){ msg('sup-out',false,e); }
+}
+async function loadSuppliers(){
+  SUPPLIERS = await api('/api/purchases/suppliers') || [];
+  document.getElementById('po-supplier').innerHTML = SUPPLIERS.map(s=>'<option value="'+s.id+'">'+s.name+'</option>').join('');
+}
+function poAddLine(){
+  const d=document.createElement('div'); d.className='row g-1 mb-1 po-line';
+  d.innerHTML='<div class="col-6"><select class="form-select form-select-sm po-v">'+variantOptions()+'</select></div>'+
+    '<div class="col-3"><input type="number" class="form-control form-control-sm po-q" placeholder="Qty" value="1"></div>'+
+    '<div class="col-2"><input type="number" class="form-control form-control-sm po-c" placeholder="Unit cost"></div>'+
+    '<div class="col-1"><button class="btn btn-sm btn-outline-danger w-100" onclick="this.closest(\'.po-line\').remove()">×</button></div>';
+  document.getElementById('po-lines').appendChild(d);
+}
+async function createPO(){
+  try{
+    const lines = Array.from(document.querySelectorAll('.po-line')).map(r=>({
+      productVariantId:r.querySelector('.po-v').value, quantity:parseInt(r.querySelector('.po-q').value)||0,
+      unitCost:parseFloat(r.querySelector('.po-c').value)||0 })).filter(l=>l.quantity>0);
+    if(!lines.length){ msg('po-out',false,'Add at least one item.'); return; }
+    const po = await api('/api/purchases/orders','POST',{ supplierId:document.getElementById('po-supplier').value, lines:lines });
+    msg('po-out',true,'Created <b>'+po.poNumber+'</b> (total ₹'+po.totalCost+'). Click Receive to add stock.');
+    document.getElementById('po-lines').innerHTML=''; poAddLine(); loadPOs();
+  }catch(e){ msg('po-out',false,e); }
+}
+async function loadPOs(){
+  try{
+    const list = await api('/api/purchases/orders');
+    if(!list||!list.length){ document.getElementById('po-list').innerHTML='<p class="text-muted">No purchase orders.</p>'; return; }
+    let h='<table class="table table-sm align-middle"><thead><tr><th>PO</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>';
+    list.forEach(p=>{ h+='<tr><td>'+p.poNumber+'</td><td>'+p.lines.length+'</td><td>₹'+p.totalCost+'</td><td>'+p.status+'</td><td>'+
+      (p.status==='Draft'?'<button class="btn btn-sm btn-success" onclick="receivePO(\''+p.id+'\')">Receive</button>':'✓')+'</td></tr>'; });
+    document.getElementById('po-list').innerHTML=h+'</tbody></table>';
+  }catch(e){ document.getElementById('po-list').innerHTML='<div class="alert alert-danger py-2">'+e+'</div>'; }
+}
+async function receivePO(id){ try{ await api('/api/purchases/orders/'+id+'/receive','POST'); loadPOs(); refreshVariants(); }catch(e){ alert(e); } }
+
+// init
+addVariantRow(); loadProducts(); refreshVariants();
 </script>
 </body>
 </html>

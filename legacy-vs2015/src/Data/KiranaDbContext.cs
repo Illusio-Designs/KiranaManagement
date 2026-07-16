@@ -15,6 +15,11 @@ namespace Kirana.WebApi.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductVariant> ProductVariants { get; set; }
+        public DbSet<SalesInvoice> SalesInvoices { get; set; }
+        public DbSet<SalesLine> SalesLines { get; set; }
+        public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+        public DbSet<PurchaseOrderLine> PurchaseOrderLines { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
