@@ -1,0 +1,34 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Dashboard.master.cs" Inherits="Kirana.WebApi.DashboardMaster" %>
+<!DOCTYPE html>
+<html lang="en">
+<head runat="server">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard · KiranaManagement</title>
+  <link rel="stylesheet" href="assets/app.css" />
+  <asp:ContentPlaceHolder ID="head" runat="server" />
+</head>
+<body>
+  <form id="form1" runat="server">
+    <div class="ka-app">
+      <aside class="ka-side" id="side" runat="server">
+        <div class="sb-brand">🛒 Kirana</div>
+        <nav><asp:ContentPlaceHolder ID="nav" runat="server" /></nav>
+        <div class="sb-foot">v1.0 · KiranaManagement</div>
+      </aside>
+      <div class="ka-main">
+        <div class="ka-top">
+          <h1><asp:ContentPlaceHolder ID="title" runat="server" /></h1>
+          <div class="ka-user">
+            <span class="ka-avatar"><asp:Literal ID="litInitial" runat="server" /></span>
+            <span><asp:Literal ID="litUser" runat="server" /></span>
+            <asp:LinkButton ID="btnLogout" runat="server" CssClass="btn btn-outline btn-sm" Text="Logout" OnClick="Logout_Click" />
+          </div>
+        </div>
+        <main class="ka-content"><asp:ContentPlaceHolder ID="main" runat="server" /></main>
+        <footer class="ka-foot">© 2026 KiranaManagement — Multi-store grocery platform</footer>
+      </div>
+    </div>
+  </form>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.master.cs" Inherits="Kirana.WebApi.SiteMaster" %>
+<!DOCTYPE html>
+<html lang="en">
+<head runat="server">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KiranaManagement</title>
+  <link rel="stylesheet" href="assets/app.css" />
+  <asp:ContentPlaceHolder ID="head" runat="server" />
+</head>
+<body>
+  <div class="topnav"><div class="container">
+    <a class="brand" href="home.aspx">🛒 Kirana</a>
+    <a class="navlink" href="shop.aspx">Shop</a>
+    <a class="navlink right" href="cart.aspx">🛍️ Cart</a>
+    <asp:Literal ID="litAccount" runat="server" />
+  </div></div>
+
+  <form id="form1" runat="server">
+    <div class="container" style="margin-top:20px">
+      <asp:ContentPlaceHolder ID="main" runat="server" />
+    </div>
+  </form>
+
+  <div class="foot"><div class="container">© 2026 KiranaManagement — Multi-store grocery marketplace</div></div>
+</body>
+</html>
