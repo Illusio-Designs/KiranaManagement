@@ -1,3 +1,4 @@
+using Kirana.Application.Carts;
 using Kirana.Application.Common.Interfaces;
 using Kirana.Infrastructure.Identity;
 using Kirana.Infrastructure.Integrations.Otp;
@@ -16,6 +17,7 @@ public static class DependencyInjection
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<GoogleAuthOptions>(configuration.GetSection(GoogleAuthOptions.SectionName));
+        services.Configure<DeliveryEstimateOptions>(configuration.GetSection(DeliveryEstimateOptions.SectionName));
 
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Missing connection string 'Default'.");

@@ -3,18 +3,20 @@ using Kirana.Domain.Common;
 namespace Kirana.Domain.Catalog;
 
 /// <summary>
-/// A catalog product owned by one store. Implements <see cref="ITenantEntity"/>,
-/// so it is automatically filtered by the current tenant — included in Phase 0
-/// to prove multi-tenant isolation end-to-end. Full catalog comes in Phase 1.
+/// A catalog product owned by one store. Prices and stock live on its
+/// <see cref="ProductVariant"/>s (e.g. 500 g / 1 kg packs), each with its own
+/// MRP and selling price. Tenant-scoped (auto-filtered by store).
 /// </summary>
 public class Product : BaseEntity, ITenantEntity
 {
     public Guid StoreId { get; set; }
 
     public string Name { get; set; } = string.Empty;
-    public string? Sku { get; set; }
-    public decimal Price { get; set; }
-    public decimal TaxRate { get; set; }
-    public int StockQuantity { get; set; }
+    public string? Description { get; set; }
+    public Guid? CategoryId { get; set; }
+    public string? Brand { get; set; }
+    public string? ImageUrl { get; set; }
     public bool IsActive { get; set; } = true;
+
+    public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
 }

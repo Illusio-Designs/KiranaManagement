@@ -1,6 +1,10 @@
 using Kirana.Application.Auth;
+using Kirana.Application.Carts;
+using Kirana.Application.Catalog;
 using Kirana.Application.Customers;
 using Kirana.Application.Geo;
+using Kirana.Application.Inventory;
+using Kirana.Application.Marketplace;
 using Kirana.Application.Stores;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +19,12 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IGeoService, GeoService>();
         services.AddScoped<ICustomerAuthService, CustomerAuthService>();
+
+        services.AddScoped<ICatalogService, CatalogService>();
+        services.AddScoped<IInventoryService, InventoryService>();
+        services.AddScoped<IMarketplaceService, MarketplaceService>();
+        services.AddScoped<ICartService, CartService>();
+
         return services;
     }
 }

@@ -226,8 +226,8 @@ Each requirement is tagged with a priority: **P0** (must-have, v1), **P1** (shou
 - **FR-2a.5 (P1)** OTP delivered via SMS/WhatsApp (provider per [COSTS.md](COSTS.md)); expiry + attempt limits enforced.
 
 ### 5.3 Catalog & Inventory
-- **FR-3.1 (P0)** Product master: name, SKU/barcode, category, unit of measure, tax rate, purchase & selling price, images.
-- **FR-3.2 (P0)** Stock tracking with quantity on hand, reorder level, and low-stock alerts.
+- **FR-3.1 (P0)** Product master with **variants**: a product (name, category, brand, image) has one or more **variants** (e.g. 500 g / 1 kg / 6-pack), each with SKU/barcode, unit + pack size, **MRP and selling price** (the **discount** is derived: MRP − selling price), tax rate, and stock.
+- **FR-3.2 (P0)** Stock tracking **per variant** with quantity on hand, reorder level, low-stock alerts, and a **stock ledger** (every movement recorded).
 - **FR-3.3 (P0)** Batch / lot and **expiry** tracking; near-expiry alerts.
 - **FR-3.4 (P1)** Variants & bundles (e.g., pack sizes), weight-based items.
 - **FR-3.5 (P1)** Stock adjustments and periodic stock-take/counts with variance report.

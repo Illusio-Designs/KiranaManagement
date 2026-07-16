@@ -66,6 +66,30 @@ Sign-In; `Storage:BasePath` controls where uploaded documents are saved.
 
 Run tests: `dotnet test`
 
+## Phase 1 — Catalog (variants + MRP/discount), Inventory, Cart
+
+Also implemented:
+
+**Catalog (owner/manager, tenant-scoped):**
+- `POST /api/categories`, `GET /api/categories`
+- `POST /api/products` — a product with one or more **variants**; each variant has
+  **MRP + selling price** (discount = MRP − selling price), unit/pack size, tax, stock.
+- `GET /api/products`, `GET /api/products/{id}`, `POST /api/products/{id}/variants`,
+  `PUT /api/variants/{id}`.
+
+**Inventory (owner/manager/stock-clerk):**
+- `POST /api/inventory/variants/{id}/adjust` (writes a stock-ledger entry),
+  `GET /api/inventory/low-stock`, `GET /api/inventory/variants/{id}/ledger`.
+
+**Marketplace + Cart (customer):**
+- `GET /api/marketplace/stores/{storeId}/products` — browse a store's active catalog
+  (cross-store, anonymous).
+- Cart (customer JWT from OTP login): `GET /api/cart`, `POST /api/cart/items`
+  (`{storeId, productVariantId, quantity}`), `PUT/DELETE /api/cart/items/{id}`,
+  `DELETE /api/cart`. The summary groups items **by store** and returns MRP total,
+  **total discount**, and an **estimated delivery fee** (config `Delivery` section;
+  the real quote comes from a 3PL at checkout) plus the grand total.
+
 ## Guides
 
 ## Guides

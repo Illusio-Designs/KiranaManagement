@@ -1,59 +1,45 @@
-using Kirana.Application.Common.Interfaces;
-using Kirana.Domain.Catalog;
+using Kirana.Application.Catalog;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Kirana.Api.Controllers;
 
 /// <summary>
-/// Minimal catalog endpoint included in Phase 0 to prove multi-tenant isolation:
-/// products are auto-scoped to the caller's store by the global query filter, so
-/// a store only ever sees its own products. Full catalog CRUD lands in Phase 1.
+/// Store catalog: products and their variants (each variant has MRP + selling
+/// price; the discount is derived). Tenant-scoped to the caller's store.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "Owner,Manager")]
 public class ProductsController : ControllerBase
 {
-    private readonly IAppDbContext _db;
+    private readonly ICatalogService _catalog;
 
-    public ProductsController(IAppDbContext db)
+    public ProductsController(ICatalogService catalog)
     {
-        _db = db;
+        _catalog = catalog;
     }
-
-    public record CreateProductRequest(string Name, string? Sku, decimal Price, decimal TaxRate, int StockQuantity);
-    public record ProductDto(Guid Id, string Name, string? Sku, decimal Price, decimal TaxRate, int StockQuantity);
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ProductDto>>> List(CancellationToken ct)
-    {
-        // No StoreId filter needed here — the tenant query filter applies automatically.
-        var products = await _db.Products
-            .OrderBy(p => p.Name)
-            .Select(p => new ProductDto(p.Id, p.Name, p.Sku, p.Price, p.TaxRate, p.StockQuantity))
-            .ToListAsync(ct);
-        return Ok(products);
-    }
+        => Ok(await _catalog.GetProductsAsync(ct));
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<ProductDto>> Get(Guid id, CancellationToken ct)
+        => Ok(await _catalog.GetProductAsync(id, ct));
 
     [HttpPost]
     public async Task<ActionResult<ProductDto>> Create(CreateProductRequest request, CancellationToken ct)
     {
-        // StoreId is stamped automatically on save from the current tenant.
-        var product = new Product
-        {
-            Name = request.Name.Trim(),
-            Sku = request.Sku?.Trim(),
-            Price = request.Price,
-            TaxRate = request.TaxRate,
-            StockQuantity = request.StockQuantity
-        };
-
-        _db.Products.Add(product);
-        await _db.SaveChangesAsync(ct);
-
-        var dto = new ProductDto(product.Id, product.Name, product.Sku, product.Price, product.TaxRate, product.StockQuantity);
-        return CreatedAtAction(nameof(List), new { id = product.Id }, dto);
+        var product = await _catalog.CreateProductAsync(request, ct);
+        return CreatedAtAction(nameof(Get), new { id = product.Id }, product);
     }
+
+    [HttpPost("{id:guid}/variants")]
+    public async Task<ActionResult<ProductVariantDto>> AddVariant(Guid id, CreateVariantRequest request, CancellationToken ct)
+        => Ok(await _catalog.AddVariantAsync(id, request, ct));
+
+    [HttpPut("/api/variants/{variantId:guid}")]
+    public async Task<ActionResult<ProductVariantDto>> UpdateVariant(Guid variantId, UpdateVariantRequest request, CancellationToken ct)
+        => Ok(await _catalog.UpdateVariantAsync(variantId, request, ct));
 }
