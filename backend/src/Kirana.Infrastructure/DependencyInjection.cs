@@ -1,6 +1,7 @@
 using Kirana.Application.Carts;
 using Kirana.Application.Common.Interfaces;
 using Kirana.Infrastructure.Identity;
+using Kirana.Infrastructure.Integrations.Delivery;
 using Kirana.Infrastructure.Integrations.Otp;
 using Kirana.Infrastructure.Persistence;
 using Kirana.Infrastructure.Storage;
@@ -37,6 +38,9 @@ public static class DependencyInjection
 
         // OTP delivery: dev logs the code; swap for a real SMS provider in production.
         services.AddSingleton<IOtpSender, DevOtpSender>();
+
+        // 3PL delivery: mock provider in dev; register a real provider (Porter/Borzo…) later.
+        services.AddSingleton<IDeliveryProvider, MockDeliveryProvider>();
 
         return services;
     }

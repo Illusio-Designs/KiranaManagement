@@ -1,5 +1,6 @@
 using Kirana.Domain.Catalog;
 using Kirana.Domain.Customers;
+using Kirana.Domain.Delivery;
 using Kirana.Domain.Geo;
 using Kirana.Domain.Identity;
 using Kirana.Domain.Inventory;
@@ -41,6 +42,10 @@ public interface IAppDbContext
     DbSet<Order> Orders { get; }
     DbSet<StoreOrder> StoreOrders { get; }
     DbSet<OrderLine> OrderLines { get; }
+
+    // Delivery (platform-level, 3PL)
+    DbSet<DeliveryTask> DeliveryTasks { get; }
+    DbSet<PickupPoint> PickupPoints { get; }
 
     // Sales / POS (tenant-scoped)
     DbSet<SalesInvoice> SalesInvoices { get; }

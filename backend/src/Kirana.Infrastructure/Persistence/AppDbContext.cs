@@ -3,6 +3,7 @@ using Kirana.Application.Common.Interfaces;
 using Kirana.Domain.Catalog;
 using Kirana.Domain.Common;
 using Kirana.Domain.Customers;
+using Kirana.Domain.Delivery;
 using Kirana.Domain.Geo;
 using Kirana.Domain.Identity;
 using Kirana.Domain.Inventory;
@@ -46,6 +47,9 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
     public DbSet<OrderLine> OrderLines => Set<OrderLine>();
+
+    public DbSet<DeliveryTask> DeliveryTasks => Set<DeliveryTask>();
+    public DbSet<PickupPoint> PickupPoints => Set<PickupPoint>();
 
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
     public DbSet<SalesLine> SalesLines => Set<SalesLine>();

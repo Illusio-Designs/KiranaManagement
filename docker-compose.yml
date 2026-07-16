@@ -1,0 +1,18 @@
+# Local MySQL for development — matches backend/src/Kirana.Api/appsettings.Development.json
+# Start:  docker compose up -d
+# Stop:   docker compose down   (add -v to also wipe the data volume)
+services:
+  mysql:
+    image: mysql:8
+    container_name: kirana-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: kirana
+    ports:
+      - "3306:3306"
+    volumes:
+      - kirana-mysql-data:/var/lib/mysql
+
+volumes:
+  kirana-mysql-data:

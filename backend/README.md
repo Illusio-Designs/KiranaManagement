@@ -30,11 +30,19 @@ endpoint that proves store isolation.
 [../docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md) §4 for a Docker one-liner).
 
 ```bash
+# From the repo root — start MySQL (matches the dev connection string):
+docker compose up -d
+
+# Then run the API:
 cd backend
-# 1. point appsettings.Development.json at your MySQL (default: localhost root/root, db 'kirana')
 dotnet restore
 dotnet run --project src/Kirana.Api      # Swagger at http://localhost:5080/swagger
 ```
+
+**In VS Code:** install the **C# Dev Kit** extension, open the repo, and press
+**F5** (the `.vscode/launch.json` builds and runs `Kirana.Api`). Or run the
+`run` task / the `dotnet run` command above in the terminal. Start MySQL first
+with `docker compose up -d`.
 
 On first run (Development) the app **creates the schema** (`EnsureCreated`) and
 **seeds a SuperAdmin** — default `superadmin@kirana.local` / `Admin@12345`
@@ -118,8 +126,30 @@ Turns a customer cart into **one parent order split into per-store parts**.
   cancel restocks. The **parent order status is recomputed** from all parts
   (`Placed → Preparing → ReadyForPickup`; all-cancelled → `Cancelled`).
 
-> Payment and delivery are mocked/estimated here; real payment gateway and **3PL
-> delivery** land in Phase 3 (see [../docs/DELIVERY_INTEGRATIONS.md](../docs/DELIVERY_INTEGRATIONS.md)).
+> Payment is mocked here; a real payment gateway lands later.
+
+## Phase 3 — Delivery via 3PL
+
+Delivery is fulfilled by a **third-party courier** behind an `IDeliveryProvider`
+seam (a **mock provider** in dev; Porter/Borzo/Shiprocket later — see
+[../docs/DELIVERY_INTEGRATIONS.md](../docs/DELIVERY_INTEGRATIONS.md)).
+
+- **Book (platform dispatch, SuperAdmin):** `POST /api/orders/{orderId}/delivery/book`
+  — only when the order is `ReadyForPickup`. Builds a `DeliveryTask` with a
+  **`PickupPoint` per store** (multi-store pickup), calls the provider, and returns
+  a tracking reference + fee.
+- **Track:** `GET /api/orders/{orderId}/delivery` — status, rider, tracking URL,
+  COD amount, and pickup progress.
+- **Status webhook (partner → us):** `POST /api/webhooks/delivery/{provider}`
+  `{ externalTaskId, status, riderName?, riderPhone?, podReference? }` — maps the
+  partner status onto the delivery + **parent order** (`OutForDelivery`,
+  `Delivered`), marks pickups collected, and on delivery records **POD** and
+  settles **COD** (and marks the order paid). Idempotent; signature verification
+  is required in production.
+
+**Try it:** advance every store part to `ready` → `POST .../delivery/book` (as
+SuperAdmin) → simulate the courier with
+`POST /api/webhooks/delivery/Mock { "externalTaskId": "<id>", "status": "Delivered" }`.
 
 ## Guides
 
