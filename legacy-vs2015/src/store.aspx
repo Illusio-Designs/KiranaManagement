@@ -139,9 +139,14 @@
     var name=val('p-name'); var hint=document.getElementById('p-imghint'); if(!name||!hint) return;
     try{ var m=await KA.api('/api/catalog/image?name='+encodeURIComponent(name));
       if(m && m.imageUrl){
-        hint.innerHTML='<span class="badge badge-green">Catalog image found</span> "'+m.name+'" already has a shared image — it will be reused if you leave the image blank.';
+        // Found in the master catalog -> reuse & display it.
+        hint.innerHTML='<span class="badge badge-green">Catalog image found</span> "'+m.name+'" already has a shared image — it will be reused automatically. Leave the image blank to use it.';
         if(!val('p-img')) showPrev(m.imageUrl);
-      } else { hint.textContent=''; if(!val('p-img')) showPrev(''); }
+      } else {
+        // Not in the catalog yet -> ask the owner to add one; it becomes the master.
+        hint.innerHTML='<span class="badge badge-amber">No catalog image yet</span> Add an image URL below — it will be saved as the shared image for "'+name+'" and reused by other stores.';
+        if(!val('p-img')) showPrev('');
+      }
     }catch(e){}
   }
   async function loadProducts(){ try{ var list=await KA.api('/api/products');
