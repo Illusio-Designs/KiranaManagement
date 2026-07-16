@@ -90,6 +90,18 @@ Also implemented:
   **total discount**, and an **estimated delivery fee** (config `Delivery` section;
   the real quote comes from a 3PL at checkout) plus the grand total.
 
+**POS billing (owner/manager/cashier):**
+- `POST /api/sales` — ring up a sale: `{ paymentMode, amountPaid?, lines: [{ productVariantId,
+  quantity, unitPriceOverride? }] }`. Prices are tax-inclusive; the invoice returns
+  taxable total, **GST component**, total discount vs MRP, grand total, and change due,
+  and **stock is decremented** (with ledger entries). `GET /api/sales`, `GET /api/sales/{id}`.
+
+**Purchase (owner/manager/stock-clerk):**
+- Suppliers: `POST /api/suppliers`, `GET /api/suppliers`.
+- Purchase orders: `POST /api/purchase-orders` (`{ supplierId, notes?, lines: [{ productVariantId,
+  quantity, unitCost }] }`) → draft; `GET`, `GET /{id}`; `POST /api/purchase-orders/{id}/receive`
+  — goods receipt that **increases stock** (with ledger entries) and marks the PO received.
+
 ## Guides
 
 ## Guides

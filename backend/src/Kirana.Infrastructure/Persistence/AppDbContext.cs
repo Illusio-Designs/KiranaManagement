@@ -8,6 +8,8 @@ using Kirana.Domain.Identity;
 using Kirana.Domain.Inventory;
 using Kirana.Domain.Orders;
 using Kirana.Domain.Platform;
+using Kirana.Domain.Purchasing;
+using Kirana.Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kirana.Infrastructure.Persistence;
@@ -40,6 +42,13 @@ public class AppDbContext : DbContext, IAppDbContext
 
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
+
+    public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
+    public DbSet<SalesLine> SalesLines => Set<SalesLine>();
+
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

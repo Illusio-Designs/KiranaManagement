@@ -5,6 +5,8 @@ using Kirana.Domain.Identity;
 using Kirana.Domain.Inventory;
 using Kirana.Domain.Orders;
 using Kirana.Domain.Platform;
+using Kirana.Domain.Purchasing;
+using Kirana.Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kirana.Application.Common.Interfaces;
@@ -34,6 +36,15 @@ public interface IAppDbContext
     // Marketplace cart (platform-level)
     DbSet<Cart> Carts { get; }
     DbSet<CartItem> CartItems { get; }
+
+    // Sales / POS (tenant-scoped)
+    DbSet<SalesInvoice> SalesInvoices { get; }
+    DbSet<SalesLine> SalesLines { get; }
+
+    // Purchasing (tenant-scoped)
+    DbSet<Supplier> Suppliers { get; }
+    DbSet<PurchaseOrder> PurchaseOrders { get; }
+    DbSet<PurchaseOrderLine> PurchaseOrderLines { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
