@@ -22,6 +22,9 @@ namespace Kirana.WebApi.Models
         public Guid StoreId { get; set; }
         public Guid ProductId { get; set; }
 
+        // Navigation back to the parent product (needed for .Include(v => v.Product)).
+        public virtual Product Product { get; set; }
+
         [MaxLength(120)]
         public string Name { get; set; }
 
