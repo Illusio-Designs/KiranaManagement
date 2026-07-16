@@ -1,0 +1,9 @@
+node_modules/
+.env
+backend/uploads/
+.expo/
+dist/
+web-build/
+npm-debug.*
+*.log
+.DS_Store
