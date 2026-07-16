@@ -1,7 +1,11 @@
 <%@ Page Title="Admin" Language="C#" MasterPageFile="~/Dashboard.master" AutoEventWireup="true" CodeBehind="admin.aspx.cs" Inherits="Kirana.WebApi.admin" %>
 <asp:Content ID="ct" ContentPlaceHolderID="title" runat="server">Store approvals</asp:Content>
 <asp:Content ID="cn" ContentPlaceHolderID="nav" runat="server">
-  <a href="admin.aspx" class="active">🕓 Approvals</a>
+  <div class="ka-navgroup"><div class="gl">General</div><nav>
+    <a href="admin.aspx" class="active" data-tip="Store approvals">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg>
+      <span class="lbl3">Store approvals</span></a>
+  </nav></div>
 </asp:Content>
 <asp:Content ID="cm" ContentPlaceHolderID="main" runat="server">
   <div class="card"><div class="card-h"><h3>Pending stores</h3></div><div class="card-b">

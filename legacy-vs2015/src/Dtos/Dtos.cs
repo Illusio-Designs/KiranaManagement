@@ -53,6 +53,25 @@ namespace Kirana.WebApi.Dtos
         public string Password { get; set; }
     }
 
+    // Store-owner Google sign-in: browser obtains a Google ID token and posts it.
+    public class GoogleLoginRequest
+    {
+        public string IdToken { get; set; }
+    }
+
+    // Consumer OTP login.
+    public class RequestOtpRequest
+    {
+        public string Phone { get; set; }
+    }
+
+    public class VerifyOtpRequest
+    {
+        public string Phone { get; set; }
+        public string Code { get; set; }
+        public string FullName { get; set; } // optional, used on first sign-in
+    }
+
     public class LoginResponse
     {
         public string Token { get; set; }
@@ -249,6 +268,9 @@ namespace Kirana.WebApi.Dtos
         public string StoreName { get; set; }
         public string Name { get; set; }
         public string Brand { get; set; }
+        public string Category { get; set; }
+        public decimal MinPrice { get; set; }
+        public decimal MaxDiscountPercent { get; set; }
         public List<MarketVariantDto> Variants { get; set; }
     }
 
@@ -264,6 +286,11 @@ namespace Kirana.WebApi.Dtos
         public string CustomerName { get; set; }
         public string Phone { get; set; }
         public string Address { get; set; }
+        public string City { get; set; }
+        public string Pincode { get; set; }
+        // Geo-location of the delivery address (from the browser / map picker).
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public List<PlaceOrderLineRequest> Lines { get; set; }
     }
 
@@ -282,13 +309,53 @@ namespace Kirana.WebApi.Dtos
         public OrderDto() { Lines = new List<OrderLineDto>(); }
         public Guid Id { get; set; }
         public string OrderNumber { get; set; }
+        public string Status { get; set; }
         public string CustomerName { get; set; }
         public string Phone { get; set; }
         public string Address { get; set; }
+        public string City { get; set; }
+        public string Pincode { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public double? DistanceKm { get; set; }
+        public int? EtaMinutes { get; set; }
         public decimal Subtotal { get; set; }
         public decimal DeliveryFee { get; set; }
         public decimal GrandTotal { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<OrderLineDto> Lines { get; set; }
+    }
+
+    // ----- Store-facing order view (consumer identity intentionally hidden) -----
+    // A store owner sees only what they need to fulfil their part of an order:
+    // items, quantities, this store's total, the delivery AREA (city + pincode)
+    // and an approximate distance/ETA. Name, phone and full address are omitted.
+    public class StoreOrderLineDto
+    {
+        public string ProductName { get; set; }
+        public string VariantName { get; set; }
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal LineTotal { get; set; }
+    }
+
+    public class UpdateOrderStatusRequest
+    {
+        public string Status { get; set; }
+    }
+
+    public class StoreOrderDto
+    {
+        public StoreOrderDto() { Lines = new List<StoreOrderLineDto>(); }
+        public Guid Id { get; set; }
+        public string OrderNumber { get; set; }
+        public string Status { get; set; }
+        public string DeliveryArea { get; set; }   // e.g. "Andheri West, Mumbai 400058"
+        public double? DistanceKm { get; set; }
+        public int? EtaMinutes { get; set; }
+        public int ItemCount { get; set; }
+        public decimal StoreTotal { get; set; }    // total for THIS store's lines only
+        public DateTime CreatedAt { get; set; }
+        public List<StoreOrderLineDto> Lines { get; set; }
     }
 }

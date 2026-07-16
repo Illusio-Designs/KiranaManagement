@@ -22,6 +22,7 @@ namespace Kirana.WebApi.Data
         public DbSet<PurchaseOrderLine> PurchaseOrderLines { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderLine> OrderLines { get; set; }
+        public DbSet<OtpCode> OtpCodes { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -30,6 +31,21 @@ namespace Kirana.WebApi.Data
             modelBuilder.Entity<ProductVariant>().Property(v => v.TaxRatePercent).HasPrecision(5, 2);
             modelBuilder.Entity<ProductVariant>().Property(v => v.PackSize).HasPrecision(12, 3);
             base.OnModelCreating(modelBuilder);
+        }
+
+        // Helper: build a single-variant product for the marketplace seed.
+        private static Product MakeProduct(System.Guid storeId, string name, string brand,
+            string category, string variantName, string sku, UnitOfMeasure unit,
+            decimal packSize, decimal mrp, decimal price, int stock)
+        {
+            var p = new Product { StoreId = storeId, Name = name, Brand = brand, Category = category };
+            p.Variants.Add(new ProductVariant
+            {
+                StoreId = storeId, Name = variantName, Sku = sku,
+                Unit = unit, PackSize = packSize, Mrp = mrp, SellingPrice = price,
+                TaxRatePercent = 5m, StockQuantity = stock, ReorderLevel = 10
+            });
+            return p;
         }
 
         // Seeds a SuperAdmin + a ready-to-use sample store on first run.
@@ -67,7 +83,9 @@ namespace Kirana.WebApi.Data
                         Gstin = "24ABCDE1234F1Z5",
                         Pan = "ABCDE1234F",
                         Status = StoreStatus.Active,          // already approved
-                        ApprovedAt = System.DateTime.UtcNow
+                        ApprovedAt = System.DateTime.UtcNow,
+                        Latitude = 23.0225,                   // Ahmedabad
+                        Longitude = 72.5714
                     };
                     db.Stores.Add(store);
 
@@ -85,7 +103,8 @@ namespace Kirana.WebApi.Data
                     {
                         StoreId = store.Id,
                         Name = "Aashirvaad Atta",
-                        Brand = "Aashirvaad"
+                        Brand = "Aashirvaad",
+                        Category = "Pulses & Grains"
                     };
                     product.Variants.Add(new ProductVariant
                     {
@@ -102,6 +121,19 @@ namespace Kirana.WebApi.Data
                         StockQuantity = 40, ReorderLevel = 5
                     });
                     db.Products.Add(product);
+
+                    // A few more products across categories so consumer
+                    // search / category filter has something to show.
+                    db.Products.Add(MakeProduct(store.Id, "Fresh Apples", "Farm", "Fruits",
+                        "1 kg", "APPLE-1KG", UnitOfMeasure.Kilogram, 1m, 159m, 119m, 80));
+                    db.Products.Add(MakeProduct(store.Id, "Amul Milk", "Amul", "Dairy & Eggs",
+                        "1 L", "MILK-1L", UnitOfMeasure.Litre, 1m, 62m, 54m, 60));
+                    db.Products.Add(MakeProduct(store.Id, "Tata Salt", "Tata", "Cooking Essentials",
+                        "1 kg", "SALT-1KG", UnitOfMeasure.Kilogram, 1m, 28m, 25m, 120));
+                    db.Products.Add(MakeProduct(store.Id, "Lay's Chips", "Lay's", "Snacks",
+                        "52 g", "LAYS-52G", UnitOfMeasure.Gram, 52m, 20m, 18m, 200));
+                    db.Products.Add(MakeProduct(store.Id, "Fresh Tomatoes", "Farm", "Vegetables",
+                        "1 kg", "TOM-1KG", UnitOfMeasure.Kilogram, 1m, 59m, 39m, 90));
 
                     db.SaveChanges();
                 }

@@ -75,31 +75,41 @@ var KA = (function () {
     });
   }
 
-  /* ---- dashboard shell (sidebar + topbar + footer) ---- */
+  /* ---- dashboard shell (green, collapsible sidebar + topbar + footer) ---- */
+  function toggleSide() {
+    var s = document.getElementById('ka-side'); if (!s) return;
+    s.classList.toggle('collapsed');
+    try { localStorage.setItem('ka_side_collapsed', s.classList.contains('collapsed') ? '1' : '0'); } catch (e) {}
+  }
   function shell(opts) {
     // opts: { kind:'store'|'admin', title, active, links:[{key,label,icon,href}] }
-    var kind = opts.kind || 'admin';
     var nav = opts.links.map(function (l) {
-      return '<a href="' + l.href + '" class="' + (l.key === opts.active ? 'active' : '') + '">' +
-        '<span>' + (l.icon || '•') + '</span> ' + l.label + '</a>';
+      return '<a href="' + l.href + '" data-tip="' + l.label + '" class="' + (l.key === opts.active ? 'active' : '') + '">' +
+        '<span class="ic-emo">' + (l.icon || '•') + '</span> <span class="lbl3">' + l.label + '</span></a>';
     }).join('');
     var initials = (uname() || 'U').substring(0, 1).toUpperCase();
+    var collapsed = false; try { collapsed = localStorage.getItem('ka_side_collapsed') === '1'; } catch (e) {}
     document.body.classList.add('ka-app');
     document.body.innerHTML =
-      '<aside class="ka-side ' + kind + '" id="ka-side">' +
-        '<div class="sb-brand">🛒 Kirana' + (kind === 'admin' ? ' Admin' : '') + '</div>' +
-        '<nav>' + nav + '</nav>' +
-        '<div class="sb-foot">v1.0 · KiranaManagement</div>' +
+      '<aside class="ka-side' + (collapsed ? ' collapsed' : '') + '" id="ka-side">' +
+        '<div class="ka-side-inner">' +
+          '<div class="sb-head">' +
+            '<div class="sb-brand"><span class="lm"><svg class="ic" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13C4 8 8 4 20 4c0 12-4 16-9 16z"/><path d="M9 17c1-4 4-7 8-9"/></svg></span><span class="bt">Kirana</span></div>' +
+            '<button type="button" class="sb-toggle" title="Collapse sidebar" onclick="KA.toggleSide()">' +
+              '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/></svg></button>' +
+          '</div>' +
+          '<div class="ka-navgroup"><nav>' + nav + '</nav></div>' +
+          '<div class="sb-foot">v1.0 · KiranaManagement</div>' +
+        '</div>' +
       '</aside>' +
       '<div class="ka-main">' +
         '<div class="ka-top">' +
-          '<button class="btn btn-ghost btn-sm ka-menu-btn" onclick="document.getElementById(\'ka-side\').classList.toggle(\'open\')">☰</button>' +
           '<h1>' + (opts.title || '') + '</h1>' +
           '<div class="ka-user"><span class="ka-avatar">' + initials + '</span><span>' + (uname() || '') + '</span>' +
           '<button class="btn btn-outline btn-sm" onclick="KA.logout()">Logout</button></div>' +
         '</div>' +
         '<main class="ka-content" id="ka-content"></main>' +
-        '<footer class="ka-foot">© 2026 KiranaManagement — Multi-store grocery platform</footer>' +
+        '<footer class="ka-foot">© 2026 KiranaManagement — grocery platform · Mansi, Hiral &amp; Zigma</footer>' +
       '</div>';
     return document.getElementById('ka-content');
   }
@@ -108,5 +118,5 @@ var KA = (function () {
 
   return { api: api, token: token, role: role, uname: uname, storeId: storeId, setSession: setSession,
     logout: logout, shopLogout: shopLogout, requireRole: requireRole, money: money, toast: toast, cart: cart,
-    shell: shell, updateCartBadges: updateCartBadges, renderAccountNav: renderAccountNav };
+    shell: shell, toggleSide: toggleSide, updateCartBadges: updateCartBadges, renderAccountNav: renderAccountNav };
 })();

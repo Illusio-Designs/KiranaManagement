@@ -42,6 +42,11 @@ namespace Kirana.WebApi.Models
 
         public StoreStatus Status { get; set; }
 
+        // Store geo-location (used to estimate delivery distance/ETA to the
+        // customer). Nullable: seeded/known stores have it, others may not.
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public DateTime? ApprovedAt { get; set; }
 

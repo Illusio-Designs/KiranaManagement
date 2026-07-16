@@ -18,11 +18,19 @@ namespace Kirana.WebApi.Models
         [Required, MaxLength(256)]
         public string Email { get; set; }
 
-        [Required, MaxLength(500)]
+        // Optional: Google / OTP accounts sign in without a password.
+        [MaxLength(500)]
         public string PasswordHash { get; set; }
 
         [MaxLength(200)]
         public string FullName { get; set; }
+
+        // Mobile number — the login identity for OTP-based customer sign-in.
+        [MaxLength(20)]
+        public string Phone { get; set; }
+
+        // How this account signs in (password / Google / OTP).
+        public AuthProvider Provider { get; set; }
 
         public UserRole Role { get; set; }
 

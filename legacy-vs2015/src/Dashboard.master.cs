@@ -20,9 +20,6 @@ namespace Kirana.WebApi
             var name = (Session["name"] as string) ?? "";
             litUser.Text = Server.HtmlEncode(name);
             litInitial.Text = Server.HtmlEncode(name.Length > 0 ? name.Substring(0, 1).ToUpper() : "U");
-
-            if (role == "Owner" || role == "Manager")
-                side.Attributes["class"] = "ka-side store";
         }
 
         protected void Logout_Click(object sender, EventArgs e)

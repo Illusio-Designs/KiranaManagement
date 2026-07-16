@@ -36,10 +36,17 @@ namespace Kirana.WebApi.Controllers
                     OrderNumber = "ORD-" + DateTime.UtcNow.ToString("yyMMddHHmmss"),
                     CustomerName = req.CustomerName.Trim(),
                     Phone = req.Phone.Trim(),
-                    Address = req.Address.Trim()
+                    Address = req.Address.Trim(),
+                    City = (req.City ?? "").Trim(),
+                    Pincode = (req.Pincode ?? "").Trim(),
+                    Latitude = req.Latitude,
+                    Longitude = req.Longitude,
+                    Status = OrderStatus.Placed
                 };
 
-                var storeNames = db.Stores.ToDictionary(s => s.Id, s => s.Name);
+                var stores = db.Stores.ToList();
+                var storeNames = stores.ToDictionary(s => s.Id, s => s.Name);
+                var involvedStoreIds = new HashSet<Guid>();
 
                 foreach (var line in req.Lines)
                 {
@@ -65,10 +72,38 @@ namespace Kirana.WebApi.Controllers
                     });
 
                     variant.StockQuantity -= line.Quantity;
+                    involvedStoreIds.Add(variant.StoreId);
                 }
 
                 order.Subtotal = order.Lines.Sum(l => l.LineTotal);
-                order.DeliveryFee = order.Subtotal >= 500m ? 0m : 40m;
+
+                // --- Geo-based delivery estimate ---
+                // Farthest fulfilling store from the delivery point drives the ETA.
+                if (order.Latitude.HasValue && order.Longitude.HasValue)
+                {
+                    double? maxDist = null;
+                    foreach (var s in stores.Where(s => involvedStoreIds.Contains(s.Id)
+                        && s.Latitude.HasValue && s.Longitude.HasValue))
+                    {
+                        var d = GeoUtil.DistanceKm(s.Latitude.Value, s.Longitude.Value,
+                            order.Latitude.Value, order.Longitude.Value);
+                        if (!maxDist.HasValue || d > maxDist.Value) maxDist = d;
+                    }
+                    if (maxDist.HasValue)
+                    {
+                        order.DistanceKm = Math.Round(maxDist.Value, 2);
+                        order.EtaMinutes = GeoUtil.EtaMinutes(maxDist.Value);
+                        // Distance-based fee: free within 3 km, then ₹8/km, capped.
+                        var fee = maxDist.Value <= 3.0 ? 0m : (decimal)Math.Ceiling((maxDist.Value - 3.0) * 8.0);
+                        if (fee > 120m) fee = 120m;
+                        order.DeliveryFee = fee;
+                    }
+                }
+
+                // Fallback fee when no geo is available (original subtotal rule).
+                if (!order.DistanceKm.HasValue)
+                    order.DeliveryFee = order.Subtotal >= 500m ? 0m : 40m;
+
                 order.GrandTotal = order.Subtotal + order.DeliveryFee;
 
                 db.Orders.Add(order);
@@ -95,14 +130,20 @@ namespace Kirana.WebApi.Controllers
             }
         }
 
-        // GET /api/orders/{id}
+        // GET /api/orders/{id}  (only the owning customer may view full details)
         [HttpGet, Route("{id:guid}")]
         public IHttpActionResult Get(Guid id)
         {
+            var customer = AuthUtil.GetCurrentUser(Request);
+            if (customer == null || customer.Role != UserRole.Customer)
+                return Content(HttpStatusCode.Unauthorized, new { error = "Please log in." });
+
             using (var db = new KiranaDbContext())
             {
                 var order = db.Orders.Include(o => o.Lines).FirstOrDefault(o => o.Id == id);
                 if (order == null) return NotFound();
+                if (order.CustomerId != customer.Id)
+                    return Content(HttpStatusCode.Forbidden, new { error = "This order does not belong to you." });
                 return Ok(ToDto(order));
             }
         }
@@ -113,9 +154,16 @@ namespace Kirana.WebApi.Controllers
             {
                 Id = o.Id,
                 OrderNumber = o.OrderNumber,
+                Status = o.Status.ToString(),
                 CustomerName = o.CustomerName,
                 Phone = o.Phone,
                 Address = o.Address,
+                City = o.City,
+                Pincode = o.Pincode,
+                Latitude = o.Latitude,
+                Longitude = o.Longitude,
+                DistanceKm = o.DistanceKm,
+                EtaMinutes = o.EtaMinutes,
                 Subtotal = o.Subtotal,
                 DeliveryFee = o.DeliveryFee,
                 GrandTotal = o.GrandTotal,

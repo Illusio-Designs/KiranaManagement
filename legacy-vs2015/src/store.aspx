@@ -10,7 +10,8 @@
   <script src="assets/app.js"></script>
   <script>
   if(KA.requireRole(['Owner','Manager'])){
-    var content = KA.shell({ kind:'store', title:'My Store', active:'products', links:[
+    var content = KA.shell({ kind:'store', title:'My Store', active:'orders', links:[
+      { key:'orders', label:'Orders', icon:'🛍️', href:'#orders' },
       { key:'products', label:'Products', icon:'📦', href:'#products' },
       { key:'inventory', label:'Inventory', icon:'📊', href:'#inventory' },
       { key:'pos', label:'POS / Billing', icon:'🧾', href:'#pos' },
@@ -18,12 +19,19 @@
     ]});
     content.innerHTML = TEMPLATE();
     window.addEventListener('hashchange', sync);
+    if(!location.hash) location.hash='#orders';
     addVariantRow(); loadProducts(); refreshVariants(); sync();
   }
 
   function TEMPLATE(){ return ''+
+    // ORDERS (marketplace orders — consumer identity hidden)
+    '<section class="view" id="v-orders"><div class="card"><div class="card-h"><h3>Marketplace orders</h3>'+
+      '<span class="badge badge-gray">Customer details are private</span>'+
+      '<button class="btn btn-sm btn-outline right" onclick="loadOrders()">Refresh</button></div>'+
+      '<div class="card-b"><p class="muted" style="margin-top:0">You see the items to fulfil and the delivery area &amp; ETA — never the shopper&#39;s name, phone or full address.</p>'+
+      '<div id="orders-list"></div></div></div></section>'+
     // PRODUCTS
-    '<section class="view" id="v-products"><div class="card"><div class="card-h"><h3>Add a product</h3></div><div class="card-b">'+
+    '<section class="view hidden" id="v-products"><div class="card"><div class="card-h"><h3>Add a product</h3></div><div class="card-b">'+
       '<div class="row"><div class="field" style="flex:1;min-width:200px"><label class="lbl">Name</label><input id="p-name" class="input"></div>'+
       '<div class="field" style="flex:1;min-width:200px"><label class="lbl">Brand</label><input id="p-brand" class="input"></div></div>'+
       '<div class="field"><label class="lbl">Description</label><input id="p-desc" class="input"></div>'+
@@ -67,13 +75,38 @@
       '<div class="card-b"><div id="po-list"></div></div></div></section>'; }
 
   function sync(){
-    var key=(location.hash||'#products').substring(1);
-    ['products','inventory','pos','purchases'].forEach(function(k){ document.getElementById('v-'+k).classList.toggle('hidden', k!==key); });
+    var key=(location.hash||'#orders').substring(1);
+    ['orders','products','inventory','pos','purchases'].forEach(function(k){ document.getElementById('v-'+k).classList.toggle('hidden', k!==key); });
     Array.prototype.forEach.call(document.querySelectorAll('.ka-side nav a'), function(a){ a.classList.toggle('active', a.getAttribute('href')==='#'+key); });
+    if(key==='orders') loadOrders();
     if(key==='inventory') loadLowStock();
     if(key==='pos') posInit();
     if(key==='purchases') purInit();
   }
+
+  // ORDERS — masked marketplace orders for this store.
+  async function loadOrders(){ try{ var list=await KA.api('/api/store/orders');
+    if(!list||!list.length){ document.getElementById('orders-list').innerHTML='<p class="muted">No marketplace orders yet.</p>'; return; }
+    var STAGES=['Placed','Accepted','Packed','OutForDelivery','Delivered','Cancelled'];
+    var h='';
+    list.forEach(function(o){
+      var items=o.lines.map(function(l){ return l.productName+' · '+l.variantName+' × '+l.quantity; }).join(', ');
+      var eta=o.etaMinutes?(o.etaMinutes+' min'):'—'; var dist=(o.distanceKm!=null)?(o.distanceKm+' km'):'—';
+      var opts=STAGES.map(function(s){ return '<option value="'+s+'"'+(s===o.status?' selected':'')+'>'+s+'</option>'; }).join('');
+      h+='<div class="card" style="margin-bottom:10px"><div class="card-b">'+
+        '<div class="row"><strong>'+o.orderNumber+'</strong>'+
+        '<span class="badge badge-brand">'+o.status+'</span>'+
+        '<span class="right muted" style="font-size:12.5px">'+new Date(o.createdAt).toLocaleString()+'</span></div>'+
+        '<div class="row" style="margin:8px 0"><span class="badge badge-gray">📍 '+o.deliveryArea+'</span>'+
+        '<span class="badge badge-amber">ETA '+eta+'</span><span class="badge badge-gray">'+dist+'</span>'+
+        '<span class="badge badge-green">'+o.itemCount+' items · '+KA.money(o.storeTotal)+'</span></div>'+
+        '<div class="muted" style="font-size:13px">'+items+'</div>'+
+        '<div class="row" style="margin-top:10px"><select class="input" style="max-width:200px" onchange="setOrderStatus(\''+o.id+'\',this.value)">'+opts+'</select></div>'+
+        '</div></div>';
+    });
+    document.getElementById('orders-list').innerHTML=h;
+  }catch(e){ document.getElementById('orders-list').innerHTML='<div class="alert alert-err">'+e+'</div>'; } }
+  async function setOrderStatus(id,status){ try{ await KA.api('/api/store/orders/'+id+'/status','PUT',{ status:status }); KA.toast('Order marked '+status,'ok'); }catch(e){ KA.toast(e,'err'); } }
 
   var VARIANTS=[];
   async function refreshVariants(){ var products=await KA.api('/api/products'); VARIANTS=[];

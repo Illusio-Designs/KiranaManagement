@@ -29,6 +29,11 @@ namespace Kirana.WebApi.Models
         [MaxLength(150)]
         public string Brand { get; set; }
 
+        // Consumer-facing category used for search/filter on the marketplace
+        // (e.g. "Vegetables", "Fruits", "Dairy & Eggs", "Snacks", "Grains").
+        [MaxLength(100)]
+        public string Category { get; set; }
+
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
 

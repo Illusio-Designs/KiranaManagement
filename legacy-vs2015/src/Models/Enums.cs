@@ -46,4 +46,23 @@ namespace Kirana.WebApi.Models
         Received = 1,
         Cancelled = 2
     }
+
+    // Marketplace order lifecycle (consumer + store view).
+    public enum OrderStatus
+    {
+        Placed = 0,
+        Accepted = 1,
+        Packed = 2,
+        OutForDelivery = 3,
+        Delivered = 4,
+        Cancelled = 5
+    }
+
+    // How a user authenticated / was created.
+    public enum AuthProvider
+    {
+        Password = 0,
+        Google = 1,
+        Otp = 2
+    }
 }

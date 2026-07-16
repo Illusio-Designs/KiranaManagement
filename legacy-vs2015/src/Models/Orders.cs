@@ -29,6 +29,22 @@ namespace Kirana.WebApi.Models
         [MaxLength(500)]
         public string Address { get; set; }
 
+        // Delivery area — shown to stores instead of the full address so that
+        // consumer personal data is not exposed in the store order view.
+        [MaxLength(100)]
+        public string City { get; set; }
+        [MaxLength(12)]
+        public string Pincode { get; set; }
+
+        // Delivery geo-location captured at checkout; used to estimate the
+        // distance/ETA from the fulfilling store.
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public double? DistanceKm { get; set; }
+        public int? EtaMinutes { get; set; }
+
+        public OrderStatus Status { get; set; }
+
         public decimal Subtotal { get; set; }
         public decimal DeliveryFee { get; set; }
         public decimal GrandTotal { get; set; }

@@ -12,9 +12,19 @@
   <form id="form1" runat="server">
     <div class="ka-app">
       <aside class="ka-side" id="side" runat="server">
-        <div class="sb-brand">🛒 Kirana</div>
-        <nav><asp:ContentPlaceHolder ID="nav" runat="server" /></nav>
-        <div class="sb-foot">v1.0 · KiranaManagement</div>
+        <div class="ka-side-inner">
+          <div class="sb-head">
+            <div class="sb-brand">
+              <span class="lm"><svg class="ic" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13C4 8 8 4 20 4c0 12-4 16-9 16z"/><path d="M9 17c1-4 4-7 8-9"/></svg></span>
+              <span class="bt">Kirana</span>
+            </div>
+            <button type="button" class="sb-toggle" onclick="kaToggleSide()" title="Collapse sidebar">
+              <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/></svg>
+            </button>
+          </div>
+          <asp:ContentPlaceHolder ID="nav" runat="server" />
+          <div class="sb-foot">v1.0 · KiranaManagement</div>
+        </div>
       </aside>
       <div class="ka-main">
         <div class="ka-top">
@@ -26,9 +36,18 @@
           </div>
         </div>
         <main class="ka-content"><asp:ContentPlaceHolder ID="main" runat="server" /></main>
-        <footer class="ka-foot">© 2026 KiranaManagement — Multi-store grocery platform</footer>
+        <footer class="ka-foot">© 2026 KiranaManagement — grocery platform · Mansi, Hiral &amp; Zigma</footer>
       </div>
     </div>
   </form>
+  <script>
+    function kaToggleSide(){
+      var s=document.getElementById('<%= side.ClientID %>');
+      s.classList.toggle('collapsed');
+      try{ localStorage.setItem('ka_side_collapsed', s.classList.contains('collapsed')?'1':'0'); }catch(e){}
+    }
+    (function(){ try{ if(localStorage.getItem('ka_side_collapsed')==='1')
+      document.getElementById('<%= side.ClientID %>').classList.add('collapsed'); }catch(e){} })();
+  </script>
 </body>
 </html>
