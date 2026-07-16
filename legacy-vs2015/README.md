@@ -104,23 +104,29 @@ Kirana.WebApi.Data.KiranaDbContext.Seed();
 
 ## Step 5 — The web frontend
 
-The frontend is a set of **self-contained HTML pages** (Bootstrap + plain
-JavaScript `fetch`, CDN — no build step, no npm). They call the API on the
-**same origin**, so there's nothing to configure. Put all of them at the
-**project root** (same level as `web.config`):
+The frontend is a set of **ASPX pages** (plain markup + a shared `assets/app.css`
+and `assets/app.js`, no build step, no npm). They call the API on the **same
+origin**. Put all `.aspx` at the **project root** and the `assets/` folder too:
 
 | Page | Who | Purpose |
 |---|---|---|
-| `login.html` | everyone | Sign in. Redirects by role: Super Admin → `admin.html`, store owner → `store.html`. **Set this as the Start Page.** |
-| `register.html` | public | Store self-registration (status → Pending). |
-| `admin.html` | Super Admin | Approve / reject pending stores (login-protected). |
-| `store.html` | store owner | Add products with variants (MRP / selling price / discount) and list them (login-protected). |
-| `index.html` | — | Just redirects to `login.html`. |
+| `home.aspx` | public | Landing page. **Set this as the Start Page.** |
+| `shop.aspx` | public | Marketplace product listing (all active stores). |
+| `cart.aspx` / `checkout.aspx` / `thankyou.aspx` | customer | Cart → checkout (login required) → confirmation. |
+| `signup.aspx` / `login.aspx` | everyone | Customer sign-up + universal login (redirects by role). |
+| `orders.aspx` | customer | Order history. |
+| `register.aspx` | public | Store self-registration (→ Pending). |
+| `admin.aspx` | Super Admin | Dashboard: approve / reject stores. |
+| `store.aspx` | store owner | Dashboard: Products, Inventory, POS, Purchases. |
+| `index.aspx` | — | Redirects to `home.aspx`. |
 
-In Solution Explorer, right-click **`login.html` → Set As Start Page**.
+Shared design system lives in **`assets/app.css`** + **`assets/app.js`** (header,
+sidebar, footer, API + cart + auth helpers). In Solution Explorer, right-click
+**`home.aspx` → Set As Start Page**.
 
-**Auth:** login returns a token; the pages store it and send it in the
-`X-Auth-Token` header. Super-admin and store-owner endpoints require it.
+**Auth:** login returns a token; pages store it and send it in the `X-Auth-Token`
+header. There are **no guest orders** — customers sign up / log in to check out.
+Each `.aspx` starts with a `<%@ Page Language="C#" %>` directive (Web Forms).
 
 > Uses public CDNs for Bootstrap — so an internet connection is needed the first
 > time. To go fully offline, `Install-Package bootstrap` and point the two CDN

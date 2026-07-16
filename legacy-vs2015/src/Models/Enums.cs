@@ -17,7 +17,8 @@ namespace Kirana.WebApi.Models
         Manager = 2,
         Cashier = 3,
         StockClerk = 4,
-        Accountant = 5
+        Accountant = 5,
+        Customer = 6
     }
 
     public enum UnitOfMeasure

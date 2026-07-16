@@ -11,7 +11,33 @@ namespace Kirana.WebApi.Controllers
     [RoutePrefix("api/auth")]
     public class AuthController : ApiController
     {
-        // POST /api/auth/login  -> returns a session token for SuperAdmin or store staff.
+        // POST /api/auth/register-customer  -> creates a shopper account.
+        [HttpPost, Route("register-customer")]
+        public IHttpActionResult RegisterCustomer(RegisterCustomerRequest req)
+        {
+            if (req == null || string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Password))
+                return BadRequest("Name, email and password are required.");
+
+            var email = req.Email.Trim().ToLowerInvariant();
+            using (var db = new KiranaDbContext())
+            {
+                if (db.Users.Any(u => u.Email == email))
+                    return Content(HttpStatusCode.Conflict, new { error = "An account with this email already exists." });
+
+                db.Users.Add(new User
+                {
+                    Email = email,
+                    FullName = (req.FullName ?? "").Trim(),
+                    PasswordHash = PasswordHasher.Hash(req.Password),
+                    Role = UserRole.Customer,
+                    IsActive = true
+                });
+                db.SaveChanges();
+                return Ok(new { email = email });
+            }
+        }
+
+        // POST /api/auth/login  -> returns a session token for SuperAdmin, store staff, or customer.
         [HttpPost, Route("login")]
         public IHttpActionResult Login(LoginRequest req)
         {

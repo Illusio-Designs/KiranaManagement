@@ -46,6 +46,13 @@ namespace Kirana.WebApi.Dtos
         public string Password { get; set; }
     }
 
+    public class RegisterCustomerRequest
+    {
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
     public class LoginResponse
     {
         public string Token { get; set; }
@@ -221,5 +228,67 @@ namespace Kirana.WebApi.Dtos
         public DateTime CreatedAt { get; set; }
         public DateTime? ReceivedAt { get; set; }
         public List<PurchaseLineDto> Lines { get; set; }
+    }
+
+    // ----- Consumer marketplace -----
+    public class MarketVariantDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public decimal Mrp { get; set; }
+        public decimal SellingPrice { get; set; }
+        public decimal DiscountPercent { get; set; }
+        public int StockQuantity { get; set; }
+    }
+
+    public class MarketProductDto
+    {
+        public MarketProductDto() { Variants = new List<MarketVariantDto>(); }
+        public Guid Id { get; set; }
+        public Guid StoreId { get; set; }
+        public string StoreName { get; set; }
+        public string Name { get; set; }
+        public string Brand { get; set; }
+        public List<MarketVariantDto> Variants { get; set; }
+    }
+
+    // ----- Consumer order (guest checkout) -----
+    public class PlaceOrderLineRequest
+    {
+        public Guid ProductVariantId { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    public class PlaceOrderRequest
+    {
+        public string CustomerName { get; set; }
+        public string Phone { get; set; }
+        public string Address { get; set; }
+        public List<PlaceOrderLineRequest> Lines { get; set; }
+    }
+
+    public class OrderLineDto
+    {
+        public string StoreName { get; set; }
+        public string ProductName { get; set; }
+        public string VariantName { get; set; }
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal LineTotal { get; set; }
+    }
+
+    public class OrderDto
+    {
+        public OrderDto() { Lines = new List<OrderLineDto>(); }
+        public Guid Id { get; set; }
+        public string OrderNumber { get; set; }
+        public string CustomerName { get; set; }
+        public string Phone { get; set; }
+        public string Address { get; set; }
+        public decimal Subtotal { get; set; }
+        public decimal DeliveryFee { get; set; }
+        public decimal GrandTotal { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<OrderLineDto> Lines { get; set; }
     }
 }
