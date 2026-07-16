@@ -37,6 +37,11 @@ public interface IAppDbContext
     DbSet<Cart> Carts { get; }
     DbSet<CartItem> CartItems { get; }
 
+    // Marketplace orders: parent Order (platform) + per-store parts (tenant)
+    DbSet<Order> Orders { get; }
+    DbSet<StoreOrder> StoreOrders { get; }
+    DbSet<OrderLine> OrderLines { get; }
+
     // Sales / POS (tenant-scoped)
     DbSet<SalesInvoice> SalesInvoices { get; }
     DbSet<SalesLine> SalesLines { get; }

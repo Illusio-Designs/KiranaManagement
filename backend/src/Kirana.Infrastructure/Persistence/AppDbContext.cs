@@ -43,6 +43,10 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
 
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
+    public DbSet<OrderLine> OrderLines => Set<OrderLine>();
+
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
     public DbSet<SalesLine> SalesLines => Set<SalesLine>();
 

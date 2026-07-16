@@ -102,6 +102,25 @@ Also implemented:
   quantity, unitCost }] }`) → draft; `GET`, `GET /{id}`; `POST /api/purchase-orders/{id}/receive`
   — goods receipt that **increases stock** (with ledger entries) and marks the PO received.
 
+## Phase 2 — Checkout & marketplace orders
+
+Turns a customer cart into **one parent order split into per-store parts**.
+
+**Checkout & order tracking (customer JWT):**
+- `POST /api/checkout` `{ contactName, contactPhone, addressLine, city?, pincode?, paymentMode }`
+  → creates **one `Order`** (single order number) split into a **`StoreOrder` per store**,
+  decrements each store's stock (ledger), mocks online payment (or COD for Cash), clears the cart.
+- `GET /api/orders`, `GET /api/orders/{id}` — the customer's orders with per-store groups.
+
+**Store order queue (owner/manager/cashier/stock-clerk) — tenant-scoped:**
+- `GET /api/store-orders?status=` — only this store's parts.
+- `POST /api/store-orders/{id}/accept | /pack | /ready | /cancel` — advance the store's part;
+  cancel restocks. The **parent order status is recomputed** from all parts
+  (`Placed → Preparing → ReadyForPickup`; all-cancelled → `Cancelled`).
+
+> Payment and delivery are mocked/estimated here; real payment gateway and **3PL
+> delivery** land in Phase 3 (see [../docs/DELIVERY_INTEGRATIONS.md](../docs/DELIVERY_INTEGRATIONS.md)).
+
 ## Guides
 
 ## Guides

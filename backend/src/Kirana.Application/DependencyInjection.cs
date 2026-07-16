@@ -5,6 +5,7 @@ using Kirana.Application.Customers;
 using Kirana.Application.Geo;
 using Kirana.Application.Inventory;
 using Kirana.Application.Marketplace;
+using Kirana.Application.Orders;
 using Kirana.Application.Purchasing;
 using Kirana.Application.Sales;
 using Kirana.Application.Stores;
@@ -28,6 +29,8 @@ public static class DependencyInjection
         services.AddScoped<ICartService, CartService>();
         services.AddScoped<ISalesService, SalesService>();
         services.AddScoped<IPurchaseService, PurchaseService>();
+        services.AddScoped<ICheckoutService, CheckoutService>();
+        services.AddScoped<IStoreOrderService, StoreOrderService>();
 
         return services;
     }
