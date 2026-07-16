@@ -118,8 +118,8 @@ namespace Kirana.WebApi.Controllers
                     .Where(p => p.IsActive && storeIds.Contains(p.StoreId)
                         && p.Category != null && p.Category != "")
                     .GroupBy(p => p.Category)
-                    .Select(g => new { name = g.Key, count = g.Count() })
-                    .OrderBy(x => x.name)
+                    .Select(g => new CategoryCountDto { Name = g.Key, Count = g.Count() })
+                    .OrderBy(x => x.Name)
                     .ToList();
 
                 return Ok(cats);

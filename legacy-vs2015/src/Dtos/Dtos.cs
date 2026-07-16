@@ -260,6 +260,12 @@ namespace Kirana.WebApi.Dtos
         public int StockQuantity { get; set; }
     }
 
+    public class CategoryCountDto
+    {
+        public string Name { get; set; }
+        public int Count { get; set; }
+    }
+
     public class MarketProductDto
     {
         public MarketProductDto() { Variants = new List<MarketVariantDto>(); }
