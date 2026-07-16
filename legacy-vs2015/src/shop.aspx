@@ -77,11 +77,12 @@
       if(!products || !products.length){ document.getElementById('out').innerHTML='<div class="alert">No products match your search.</div>'; document.getElementById('count').textContent=''; return; }
       products.forEach(function(p){
         var emo = EMOJI[p.category] || '🧺';
+        var thumb = p.imageUrl ? ('<img src="'+p.imageUrl+'" alt="" style="width:100%;height:100%;object-fit:contain">') : emo;
         p.variants.forEach(function(v){ n++;
           var card = document.createElement('div'); card.className='pcard';
           var off = v.discountPercent>0 ? '<span class="disc">'+Math.round(v.discountPercent)+'% OFF</span>' : '';
           card.innerHTML = off +
-            '<div class="thumb">'+emo+'</div>'+
+            '<div class="thumb">'+thumb+'</div>'+
             '<div class="store">'+p.storeName+'</div>'+
             '<div class="name">'+p.name+'</div>'+
             '<div class="wt">'+v.name+'</div>'+

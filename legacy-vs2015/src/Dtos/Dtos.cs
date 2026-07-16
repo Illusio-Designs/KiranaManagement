@@ -103,7 +103,15 @@ namespace Kirana.WebApi.Dtos
         public string Description { get; set; }
         public string Brand { get; set; }
         public string Category { get; set; }
+        public string ImageUrl { get; set; }
         public List<CreateVariantRequest> Variants { get; set; }
+    }
+
+    public class CatalogImageDto
+    {
+        public string Name { get; set; }
+        public string ImageName { get; set; }
+        public string ImageUrl { get; set; }
     }
 
     public class ProductVariantDto
@@ -136,6 +144,7 @@ namespace Kirana.WebApi.Dtos
         public string Description { get; set; }
         public string Brand { get; set; }
         public string Category { get; set; }
+        public string ImageUrl { get; set; }
         public bool IsActive { get; set; }
         public string Status { get; set; }
         public string RejectionReason { get; set; }
@@ -280,6 +289,7 @@ namespace Kirana.WebApi.Dtos
         public string Name { get; set; }
         public string Brand { get; set; }
         public string Category { get; set; }
+        public string ImageUrl { get; set; }
         public decimal MinPrice { get; set; }
         public decimal MaxDiscountPercent { get; set; }
         public List<MarketVariantDto> Variants { get; set; }

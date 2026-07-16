@@ -32,11 +32,14 @@
       '<div id="orders-list"></div></div></div></section>'+
     // PRODUCTS
     '<section class="view hidden" id="v-products"><div class="card"><div class="card-h"><h3>Add a product</h3></div><div class="card-b">'+
-      '<div class="row"><div class="field" style="flex:1;min-width:200px"><label class="lbl">Name</label><input id="p-name" class="input"></div>'+
+      '<div class="row"><div class="field" style="flex:1;min-width:200px"><label class="lbl">Name</label><input id="p-name" class="input" onblur="checkCatalog()"></div>'+
       '<div class="field" style="flex:1;min-width:200px"><label class="lbl">Brand</label><input id="p-brand" class="input"></div></div>'+
       '<div class="row"><div class="field" style="flex:2;min-width:200px"><label class="lbl">Description</label><input id="p-desc" class="input"></div>'+
       '<div class="field" style="flex:1;min-width:170px"><label class="lbl">Category</label><select id="p-cat" class="input"><option value="">Select category…</option><option>Vegetables</option><option>Fruits</option><option>Dairy &amp; Eggs</option><option>Snacks</option><option>Pulses &amp; Grains</option><option>Cooking Essentials</option><option>Household</option><option>Beverages</option></select></div></div>'+
-      '<div class="alert" style="font-size:12.5px">New products are <b>submitted for admin approval</b> and go live on the marketplace once approved.</div>'+
+      '<div class="row"><div class="field" style="flex:2;min-width:220px"><label class="lbl">Image URL (optional)</label><input id="p-img" class="input" placeholder="https://…/apple.jpg" onblur="previewImg()"></div>'+
+      '<div class="field"><label class="lbl">Preview</label><div><img id="p-imgprev" style="width:64px;height:64px;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:none"></div></div></div>'+
+      '<div id="p-imghint" class="muted" style="font-size:12px;margin:-4px 0 8px"></div>'+
+      '<div class="alert" style="font-size:12.5px">New products are <b>submitted for admin approval</b> and go live once approved. Leave the image blank to reuse a shared catalog image for the same product name.</div>'+
       '<div class="lbl">Variants</div><div id="variants"></div>'+
       '<button class="btn btn-sm btn-outline" onclick="addVariantRow()">+ Add variant</button>'+
       '<div style="margin-top:12px"><button class="btn btn-brand" onclick="createProduct()">Save product</button></div>'+
@@ -127,9 +130,20 @@
       mrp:parseFloat(r.querySelector('.v-mrp').value)||0, sellingPrice:parseFloat(r.querySelector('.v-sell').value)||0,
       taxRatePercent:parseFloat(r.querySelector('.v-tax').value)||0, stockQuantity:parseInt(r.querySelector('.v-stock').value)||0, reorderLevel:0 }; });
     if(!rows.length){ document.getElementById('p-out').innerHTML='<div class="alert alert-err">Add a variant.</div>'; return; }
-    var p=await KA.api('/api/products','POST',{ name:val('p-name'), brand:val('p-brand'), description:val('p-desc'), category:val('p-cat'), variants:rows });
+    var p=await KA.api('/api/products','POST',{ name:val('p-name'), brand:val('p-brand'), description:val('p-desc'), category:val('p-cat'), imageUrl:val('p-img'), variants:rows });
     document.getElementById('p-out').innerHTML='<div class="alert alert-ok">Saved '+p.name+' — submitted for admin approval.</div>'; loadProducts(); refreshVariants();
   }catch(e){ document.getElementById('p-out').innerHTML='<div class="alert alert-err">'+e+'</div>'; } }
+  function showPrev(u){ var pv=document.getElementById('p-imgprev'); if(!pv)return; if(u){ pv.src=u; pv.style.display='inline-block'; } else { pv.style.display='none'; } }
+  function previewImg(){ showPrev(val('p-img')); }
+  async function checkCatalog(){
+    var name=val('p-name'); var hint=document.getElementById('p-imghint'); if(!name||!hint) return;
+    try{ var m=await KA.api('/api/catalog/image?name='+encodeURIComponent(name));
+      if(m && m.imageUrl){
+        hint.innerHTML='<span class="badge badge-green">Catalog image found</span> "'+m.name+'" already has a shared image — it will be reused if you leave the image blank.';
+        if(!val('p-img')) showPrev(m.imageUrl);
+      } else { hint.textContent=''; if(!val('p-img')) showPrev(''); }
+    }catch(e){}
+  }
   async function loadProducts(){ try{ var list=await KA.api('/api/products');
     if(!list||!list.length){ document.getElementById('product-list').innerHTML='<p class="muted">No products yet.</p>'; return; }
     var h=''; list.forEach(function(p){

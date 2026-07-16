@@ -61,6 +61,31 @@ namespace Kirana.WebApi.Controllers
                     });
                 }
 
+                // ----- master catalog image: auto-create by name, or reuse -----
+                var key = CatalogImage.Key(product.Name);
+                var provided = (req.ImageUrl ?? "").Trim();
+                if (provided.Length > 0)
+                {
+                    product.ImageUrl = provided;
+                    // First image for this product name becomes the shared master.
+                    if (!db.CatalogImages.Any(c => c.NameKey == key))
+                    {
+                        db.CatalogImages.Add(new CatalogImage
+                        {
+                            NameKey = key,
+                            Name = product.Name,
+                            ImageName = CatalogImage.DeriveImageName(product.Name),
+                            ImageUrl = provided
+                        });
+                    }
+                }
+                else
+                {
+                    // No image supplied — reuse the master image if one exists.
+                    var master = db.CatalogImages.FirstOrDefault(c => c.NameKey == key);
+                    if (master != null) product.ImageUrl = master.ImageUrl;
+                }
+
                 db.Products.Add(product);
                 db.SaveChanges();
                 return Ok(ToDto(product));
@@ -217,6 +242,7 @@ namespace Kirana.WebApi.Controllers
                 Description = p.Description,
                 Brand = p.Brand,
                 Category = p.Category,
+                ImageUrl = p.ImageUrl,
                 IsActive = p.IsActive,
                 Status = p.Status.ToString(),
                 RejectionReason = p.RejectionReason

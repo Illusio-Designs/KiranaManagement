@@ -23,6 +23,7 @@ namespace Kirana.WebApi.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderLine> OrderLines { get; set; }
         public DbSet<OtpCode> OtpCodes { get; set; }
+        public DbSet<CatalogImage> CatalogImages { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -47,6 +48,21 @@ namespace Kirana.WebApi.Data
                 TaxRatePercent = 5m, StockQuantity = stock, ReorderLevel = 10
             });
             return p;
+        }
+
+        // Adds a shared master image (keyed by product name) so it is reused
+        // by any store that later lists a product with the same name.
+        private static void AddImage(KiranaDbContext db, string name, string url)
+        {
+            var key = CatalogImage.Key(name);
+            if (db.CatalogImages.Any(c => c.NameKey == key)) return;
+            db.CatalogImages.Add(new CatalogImage
+            {
+                NameKey = key,
+                Name = name,
+                ImageName = CatalogImage.DeriveImageName(name),
+                ImageUrl = url
+            });
         }
 
         // Seeds a SuperAdmin + a ready-to-use sample store on first run.
@@ -138,6 +154,18 @@ namespace Kirana.WebApi.Data
                     db.Products.Add(MakeProduct(store.Id, "Fresh Tomatoes", "Farm", "Vegetables",
                         "1 kg", "TOM-1KG", UnitOfMeasure.Kilogram, 1m, 59m, 39m, 90));
 
+                    db.SaveChanges();
+                }
+
+                // Master catalog images — shared across stores, keyed by name.
+                if (!db.CatalogImages.Any())
+                {
+                    AddImage(db, "Fresh Apples", "https://placehold.co/300x300/ffe6ef/ff4d8d?text=Apples");
+                    AddImage(db, "Amul Milk", "https://placehold.co/300x300/e3f2ff/2ea7ff?text=Milk");
+                    AddImage(db, "Tata Salt", "https://placehold.co/300x300/eef1ee/6b7a6e?text=Salt");
+                    AddImage(db, "Lay's Chips", "https://placehold.co/300x300/fff3d6/b8860b?text=Chips");
+                    AddImage(db, "Fresh Tomatoes", "https://placehold.co/300x300/fdecec/e5484d?text=Tomatoes");
+                    AddImage(db, "Aashirvaad Atta", "https://placehold.co/300x300/e9f8ec/1f9d38?text=Atta");
                     db.SaveChanges();
                 }
             }

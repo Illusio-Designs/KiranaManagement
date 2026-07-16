@@ -83,7 +83,8 @@
     try{ var products=await KA.api('/api/marketplace/products?sort=discount'); var el=document.getElementById('deals'); var h=''; var n=0;
       (products||[]).forEach(function(p){ if(n>=5) return; var v=p.variants[0]; if(!v) return; n++;
         var emo=EMOJI[p.category]||'🧺'; var off=v.discountPercent>0?('<span class="disc">'+Math.round(v.discountPercent)+'% OFF</span>'):'';
-        h+='<div class="pcard">'+off+'<div class="thumb">'+emo+'</div><div class="name">'+p.name+'</div><div class="wt">'+v.name+'</div>'+
+        var thumb=p.imageUrl?('<img src="'+p.imageUrl+'" alt="" style="width:100%;height:100%;object-fit:contain">'):emo;
+        h+='<div class="pcard">'+off+'<div class="thumb">'+thumb+'</div><div class="name">'+p.name+'</div><div class="wt">'+v.name+'</div>'+
            '<div class="pr"><span class="price">'+KA.money(v.sellingPrice)+'</span>'+(v.mrp>v.sellingPrice?'<span class="mrp">'+KA.money(v.mrp)+'</span>':'')+'</div>'+
            '<button class="btn-add" onclick="addDeal(\''+v.id+'\',\''+p.storeId+'\',\''+p.storeName.replace(/\x27/g,"")+'\',\''+p.name.replace(/\x27/g,"")+'\',\''+v.name.replace(/\x27/g,"")+'\','+v.mrp+','+v.sellingPrice+')">Add to Cart</button></div>';
       });

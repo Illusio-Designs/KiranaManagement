@@ -49,9 +49,17 @@ namespace Kirana.WebApi.Controllers
 
                 var products = query.ToList();
 
+                // Master catalog images (shared across stores, keyed by name).
+                var imageMap = db.CatalogImages.ToDictionary(c => c.NameKey, c => c.ImageUrl);
+
                 var result = new List<MarketProductDto>();
                 foreach (var p in products)
                 {
+                    var imgKey = Kirana.WebApi.Models.CatalogImage.Key(p.Name);
+                    var image = !string.IsNullOrEmpty(p.ImageUrl)
+                        ? p.ImageUrl
+                        : (imageMap.ContainsKey(imgKey) ? imageMap[imgKey] : null);
+
                     var dto = new MarketProductDto
                     {
                         Id = p.Id,
@@ -59,7 +67,8 @@ namespace Kirana.WebApi.Controllers
                         StoreName = storeNames.ContainsKey(p.StoreId) ? storeNames[p.StoreId] : "",
                         Name = p.Name,
                         Brand = p.Brand,
-                        Category = p.Category
+                        Category = p.Category,
+                        ImageUrl = image
                     };
                     foreach (var v in p.Variants.Where(x => x.IsActive))
                     {

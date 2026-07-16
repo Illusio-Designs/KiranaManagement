@@ -35,6 +35,11 @@ namespace Kirana.WebApi.Models
         [MaxLength(100)]
         public string Category { get; set; }
 
+        // Product image. May be set directly, or inherited from the shared
+        // master catalog image (keyed by product name) when left blank.
+        [MaxLength(1000)]
+        public string ImageUrl { get; set; }
+
         public bool IsActive { get; set; }
 
         // Marketplace moderation: Pending until a SuperAdmin approves it.
