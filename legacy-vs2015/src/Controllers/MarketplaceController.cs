@@ -30,7 +30,7 @@ namespace Kirana.WebApi.Controllers
 
                 var query = db.Products
                     .Include(p => p.Variants)
-                    .Where(p => p.IsActive && storeIds.Contains(p.StoreId));
+                    .Where(p => p.IsActive && p.Status == ProductStatus.Approved && storeIds.Contains(p.StoreId));
 
                 if (!string.IsNullOrWhiteSpace(category))
                 {
@@ -115,7 +115,7 @@ namespace Kirana.WebApi.Controllers
                     .ToList();
 
                 var cats = db.Products
-                    .Where(p => p.IsActive && storeIds.Contains(p.StoreId)
+                    .Where(p => p.IsActive && p.Status == ProductStatus.Approved && storeIds.Contains(p.StoreId)
                         && p.Category != null && p.Category != "")
                     .GroupBy(p => p.Category)
                     .Select(g => new CategoryCountDto { Name = g.Key, Count = g.Count() })

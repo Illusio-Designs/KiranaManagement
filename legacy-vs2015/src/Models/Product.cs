@@ -12,6 +12,7 @@ namespace Kirana.WebApi.Models
             Id = Guid.NewGuid();
             CreatedAt = DateTime.UtcNow;
             IsActive = true;
+            Status = ProductStatus.Pending;   // goes live only after admin approval
             Variants = new List<ProductVariant>();
         }
 
@@ -35,6 +36,13 @@ namespace Kirana.WebApi.Models
         public string Category { get; set; }
 
         public bool IsActive { get; set; }
+
+        // Marketplace moderation: Pending until a SuperAdmin approves it.
+        public ProductStatus Status { get; set; }
+        [MaxLength(500)]
+        public string RejectionReason { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         public virtual ICollection<ProductVariant> Variants { get; set; }

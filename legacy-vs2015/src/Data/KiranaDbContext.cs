@@ -38,7 +38,8 @@ namespace Kirana.WebApi.Data
             string category, string variantName, string sku, UnitOfMeasure unit,
             decimal packSize, decimal mrp, decimal price, int stock)
         {
-            var p = new Product { StoreId = storeId, Name = name, Brand = brand, Category = category };
+            var p = new Product { StoreId = storeId, Name = name, Brand = brand, Category = category,
+                Status = ProductStatus.Approved, ApprovedAt = System.DateTime.UtcNow };
             p.Variants.Add(new ProductVariant
             {
                 StoreId = storeId, Name = variantName, Sku = sku,
@@ -104,7 +105,9 @@ namespace Kirana.WebApi.Data
                         StoreId = store.Id,
                         Name = "Aashirvaad Atta",
                         Brand = "Aashirvaad",
-                        Category = "Pulses & Grains"
+                        Category = "Pulses & Grains",
+                        Status = ProductStatus.Approved,
+                        ApprovedAt = System.DateTime.UtcNow
                     };
                     product.Variants.Add(new ProductVariant
                     {

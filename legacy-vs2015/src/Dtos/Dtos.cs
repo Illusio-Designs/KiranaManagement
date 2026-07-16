@@ -102,6 +102,7 @@ namespace Kirana.WebApi.Dtos
         public string Name { get; set; }
         public string Description { get; set; }
         public string Brand { get; set; }
+        public string Category { get; set; }
         public List<CreateVariantRequest> Variants { get; set; }
     }
 
@@ -130,10 +131,14 @@ namespace Kirana.WebApi.Dtos
 
         public Guid Id { get; set; }
         public Guid StoreId { get; set; }
+        public string StoreName { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public string Brand { get; set; }
+        public string Category { get; set; }
         public bool IsActive { get; set; }
+        public string Status { get; set; }
+        public string RejectionReason { get; set; }
         public List<ProductVariantDto> Variants { get; set; }
     }
 

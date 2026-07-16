@@ -38,7 +38,9 @@ namespace Kirana.WebApi.Controllers
                     StoreId = CurrentStoreId,
                     Name = req.Name.Trim(),
                     Description = req.Description,
-                    Brand = req.Brand
+                    Brand = req.Brand,
+                    Category = (req.Category ?? "").Trim()
+                    // Status defaults to Pending — goes live only after admin approval.
                 };
 
                 foreach (var v in req.Variants)
@@ -134,6 +136,77 @@ namespace Kirana.WebApi.Controllers
             }
         }
 
+        // ---------- SuperAdmin product moderation ----------
+
+        private IHttpActionResult RequireSuperAdmin()
+        {
+            var user = AuthUtil.GetCurrentUser(Request);
+            if (user == null || user.Role != UserRole.SuperAdmin)
+                return Content(System.Net.HttpStatusCode.Unauthorized, new { error = "Super admin login required." });
+            return null;
+        }
+
+        // GET /api/products/pending-approval  (SuperAdmin) — products awaiting review, all stores.
+        [HttpGet, Route("pending-approval")]
+        public IHttpActionResult PendingApproval()
+        {
+            var guard = RequireSuperAdmin();
+            if (guard != null) return guard;
+
+            using (var db = new KiranaDbContext())
+            {
+                var storeNames = db.Stores.ToDictionary(s => s.Id, s => s.Name);
+                var products = db.Products.Include(p => p.Variants)
+                    .Where(p => p.Status == ProductStatus.Pending)
+                    .OrderBy(p => p.CreatedAt)
+                    .ToList();
+                var list = products.Select(p =>
+                {
+                    var dto = ToDto(p);
+                    dto.StoreName = storeNames.ContainsKey(p.StoreId) ? storeNames[p.StoreId] : "";
+                    return dto;
+                }).ToList();
+                return Ok(list);
+            }
+        }
+
+        // POST /api/products/{id}/approve  (SuperAdmin)
+        [HttpPost, Route("{id:guid}/approve")]
+        public IHttpActionResult Approve(Guid id)
+        {
+            var guard = RequireSuperAdmin();
+            if (guard != null) return guard;
+
+            using (var db = new KiranaDbContext())
+            {
+                var product = db.Products.Find(id);
+                if (product == null) return NotFound();
+                product.Status = ProductStatus.Approved;
+                product.ApprovedAt = DateTime.UtcNow;
+                product.RejectionReason = null;
+                db.SaveChanges();
+                return Ok(new { id = product.Id, status = product.Status.ToString() });
+            }
+        }
+
+        // POST /api/products/{id}/reject  (SuperAdmin)
+        [HttpPost, Route("{id:guid}/reject")]
+        public IHttpActionResult Reject(Guid id, RejectRequest req)
+        {
+            var guard = RequireSuperAdmin();
+            if (guard != null) return guard;
+
+            using (var db = new KiranaDbContext())
+            {
+                var product = db.Products.Find(id);
+                if (product == null) return NotFound();
+                product.Status = ProductStatus.Rejected;
+                product.RejectionReason = req != null ? req.Reason : "Rejected by admin";
+                db.SaveChanges();
+                return Ok(new { id = product.Id, status = product.Status.ToString() });
+            }
+        }
+
         private static ProductDto ToDto(Product p)
         {
             var dto = new ProductDto
@@ -143,7 +216,10 @@ namespace Kirana.WebApi.Controllers
                 Name = p.Name,
                 Description = p.Description,
                 Brand = p.Brand,
-                IsActive = p.IsActive
+                Category = p.Category,
+                IsActive = p.IsActive,
+                Status = p.Status.ToString(),
+                RejectionReason = p.RejectionReason
             };
 
             var variants = p.Variants ?? new List<ProductVariant>();

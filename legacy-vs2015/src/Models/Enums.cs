@@ -65,4 +65,12 @@ namespace Kirana.WebApi.Models
         Google = 1,
         Otp = 2
     }
+
+    // A product must be approved by the platform before it goes live on the marketplace.
+    public enum ProductStatus
+    {
+        Pending = 0,
+        Approved = 1,
+        Rejected = 2
+    }
 }
