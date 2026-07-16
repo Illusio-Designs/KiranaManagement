@@ -10,8 +10,8 @@
   <div class="topnav"><div class="container">
     <span class="brand">🛒 Kirana</span>
     <a class="navlink" href="shop.aspx">Shop</a>
-    <a class="navlink right cartbtn" href="cart.aspx">🛍️ Cart<span class="count" data-cart-count>0</span></a>
-    <span data-acct></span>
+    <a class="navlink right cartbtn" href="cart.aspx">🛍️ Cart<span class="count" data-cart-count="">0</span></a>
+    <span data-acct=""></span>
   </div></div>
 
   <div class="container" style="max-width:720px;margin-top:26px">
