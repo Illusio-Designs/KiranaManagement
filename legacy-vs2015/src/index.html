@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KiranaManagement</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>body{padding-bottom:60px}.card{margin-top:1rem}code{color:#b5179e}</style>
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container"><span class="navbar-brand mb-0 h1">🛒 KiranaManagement</span>
+  <span class="text-white-50 small">VS 2015 · ASP.NET Web API 2 + EF6</span></div>
+</nav>
+
+<div class="container">
+  <ul class="nav nav-tabs mt-3" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-register" type="button">Register store</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-approve" type="button">Approvals</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-products" type="button">Products</button></li>
+  </ul>
+
+  <div class="tab-content">
+    <!-- Register -->
+    <div class="tab-pane fade show active" id="tab-register">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title">Register a store</h5>
+        <div class="row g-2">
+          <div class="col-md-6"><input id="r-name" class="form-control" placeholder="Store name"></div>
+          <div class="col-md-6"><input id="r-owner" class="form-control" placeholder="Owner name"></div>
+          <div class="col-md-6"><input id="r-email" class="form-control" placeholder="Email"></div>
+          <div class="col-md-6"><input id="r-phone" class="form-control" placeholder="Phone"></div>
+          <div class="col-md-6"><input id="r-pass" type="password" class="form-control" placeholder="Password"></div>
+          <div class="col-md-6"><input id="r-city" class="form-control" placeholder="City"></div>
+          <div class="col-md-6"><input id="r-gstin" class="form-control" placeholder="GSTIN (optional)"></div>
+          <div class="col-md-6"><input id="r-pan" class="form-control" placeholder="PAN (optional)"></div>
+        </div>
+        <button class="btn btn-primary mt-3" onclick="registerStore()">Register</button>
+        <div id="r-out" class="mt-2"></div>
+      </div></div>
+    </div>
+
+    <!-- Approvals -->
+    <div class="tab-pane fade" id="tab-approve">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title d-flex justify-content-between">Pending stores
+          <button class="btn btn-sm btn-outline-secondary" onclick="loadPending()">Refresh</button></h5>
+        <div id="pending-list" class="table-responsive"></div>
+      </div></div>
+    </div>
+
+    <!-- Products -->
+    <div class="tab-pane fade" id="tab-products">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title">Add a product (with variants)</h5>
+        <div class="row g-2">
+          <div class="col-md-6"><input id="p-store" class="form-control" placeholder="Store Id (GUID)"></div>
+          <div class="col-md-6"><input id="p-name" class="form-control" placeholder="Product name"></div>
+          <div class="col-md-6"><input id="p-brand" class="form-control" placeholder="Brand (optional)"></div>
+          <div class="col-md-6"><input id="p-desc" class="form-control" placeholder="Description (optional)"></div>
+        </div>
+        <h6 class="mt-3">Variants</h6>
+        <div id="variants"></div>
+        <button class="btn btn-sm btn-outline-primary mt-2" onclick="addVariantRow()">+ Add variant</button>
+        <div><button class="btn btn-success mt-3" onclick="createProduct()">Save product</button></div>
+        <div id="p-out" class="mt-2"></div>
+        <hr>
+        <h5 class="card-title d-flex justify-content-between">Products
+          <span><input id="p-liststore" class="form-control form-control-sm d-inline-block" style="width:280px" placeholder="Store Id to list">
+          <button class="btn btn-sm btn-outline-secondary" onclick="loadProducts()">Load</button></span></h5>
+        <div id="product-list"></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const API = ''; // same-origin as the Web API
+
+function val(id){ return document.getElementById(id).value.trim(); }
+function show(id, ok, msg){ document.getElementById(id).innerHTML =
+  '<div class="alert alert-'+(ok?'success':'danger')+' py-2 mb-0">'+msg+'</div>'; }
+
+async function api(path, method, body){
+  const res = await fetch(API + path, {
+    method: method || 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const text = await res.text();
+  let data; try { data = text ? JSON.parse(text) : null; } catch(e){ data = text; }
+  if(!res.ok) throw (data && data.error) || (data && data.message) || ('HTTP '+res.status);
+  return data;
+}
+
+async function registerStore(){
+  try{
+    const s = await api('/api/stores/register','POST',{
+      storeName:val('r-name'), ownerName:val('r-owner'), email:val('r-email'),
+      phone:val('r-phone'), password:val('r-pass'), city:val('r-city'),
+      gstin:val('r-gstin'), pan:val('r-pan')
+    });
+    show('r-out', true, 'Registered. Store Id: <code>'+s.id+'</code> (status '+s.status+'). Copy this Id for products.');
+  }catch(e){ show('r-out', false, e); }
+}
+
+async function loadPending(){
+  try{
+    const list = await api('/api/stores/pending');
+    if(!list.length){ document.getElementById('pending-list').innerHTML='<p class="text-muted">No pending stores.</p>'; return; }
+    let h = '<table class="table table-sm"><thead><tr><th>Name</th><th>Owner</th><th>Email</th><th>City</th><th></th></tr></thead><tbody>';
+    list.forEach(s=>{ h += '<tr><td>'+s.name+'</td><td>'+s.ownerName+'</td><td>'+s.email+'</td><td>'+(s.city||'')+
+      '</td><td><button class="btn btn-sm btn-success" onclick="approve(\''+s.id+'\')">Approve</button></td></tr>'; });
+    document.getElementById('pending-list').innerHTML = h+'</tbody></table>';
+  }catch(e){ document.getElementById('pending-list').innerHTML='<div class="alert alert-danger py-2">'+e+'</div>'; }
+}
+async function approve(id){ try{ await api('/api/stores/'+id+'/approve','POST'); loadPending(); }catch(e){ alert(e); } }
+
+function addVariantRow(){
+  const d = document.createElement('div');
+  d.className='row g-1 mb-1 variant-row';
+  d.innerHTML =
+    '<div class="col"><input class="form-control form-control-sm v-name" placeholder="Name e.g. 1 kg"></div>'+
+    '<div class="col"><input class="form-control form-control-sm v-sku" placeholder="SKU"></div>'+
+    '<div class="col"><input type="number" class="form-control form-control-sm v-mrp" placeholder="MRP"></div>'+
+    '<div class="col"><input type="number" class="form-control form-control-sm v-sell" placeholder="Selling"></div>'+
+    '<div class="col"><input type="number" class="form-control form-control-sm v-tax" placeholder="Tax %"></div>'+
+    '<div class="col"><input type="number" class="form-control form-control-sm v-stock" placeholder="Stock"></div>';
+  document.getElementById('variants').appendChild(d);
+}
+
+async function createProduct(){
+  try{
+    const rows = Array.from(document.querySelectorAll('.variant-row')).map(r=>({
+      name: r.querySelector('.v-name').value,
+      sku: r.querySelector('.v-sku').value,
+      unit: 0,
+      packSize: 1,
+      mrp: parseFloat(r.querySelector('.v-mrp').value)||0,
+      sellingPrice: parseFloat(r.querySelector('.v-sell').value)||0,
+      taxRatePercent: parseFloat(r.querySelector('.v-tax').value)||0,
+      stockQuantity: parseInt(r.querySelector('.v-stock').value)||0,
+      reorderLevel: 0
+    }));
+    if(!rows.length){ show('p-out', false, 'Add at least one variant.'); return; }
+    const p = await api('/api/products','POST',{
+      storeId: val('p-store'), name: val('p-name'), brand: val('p-brand'),
+      description: val('p-desc'), variants: rows
+    });
+    show('p-out', true, 'Saved product <code>'+p.id+'</code> with '+p.variants.length+' variant(s).');
+  }catch(e){ show('p-out', false, e); }
+}
+
+async function loadProducts(){
+  try{
+    const list = await api('/api/products?storeId='+encodeURIComponent(val('p-liststore')));
+    if(!list.length){ document.getElementById('product-list').innerHTML='<p class="text-muted">No products.</p>'; return; }
+    let h='';
+    list.forEach(p=>{
+      h += '<div class="border rounded p-2 mb-2"><strong>'+p.name+'</strong> '+(p.brand?('· '+p.brand):'')+
+        '<table class="table table-sm mt-2 mb-0"><thead><tr><th>Variant</th><th>MRP</th><th>Selling</th><th>Discount</th><th>Stock</th></tr></thead><tbody>';
+      p.variants.forEach(v=>{ h += '<tr><td>'+v.name+'</td><td>₹'+v.mrp+'</td><td>₹'+v.sellingPrice+
+        '</td><td>₹'+v.discountAmount+' ('+v.discountPercent+'%)</td><td>'+v.stockQuantity+'</td></tr>'; });
+      h += '</tbody></table></div>';
+    });
+    document.getElementById('product-list').innerHTML = h;
+  }catch(e){ document.getElementById('product-list').innerHTML='<div class="alert alert-danger py-2">'+e+'</div>'; }
+}
+
+addVariantRow();
+</script>
+</body>
+</html>

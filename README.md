@@ -16,11 +16,16 @@ The platform ships as three connected surfaces over a shared backend:
 ## Repository Structure
 ```
 KiranaManagement/
- ├─ backend/    ASP.NET Core Web API — shared backend for all clients
- ├─ frontend/   Store Management Dashboard + Super Admin console (web)
- ├─ app/        Customer Online-Order App + Driver App (mobile/PWA)
- └─ docs/       PRD and development guide
+ ├─ backend/         ASP.NET Core (.NET 8) Web API — shared backend for all clients
+ ├─ frontend/        Store Management Dashboard + Super Admin console (web)
+ ├─ app/             Customer Online-Order App + Driver App (mobile/PWA)
+ ├─ legacy-vs2015/   VS 2015 version — ASP.NET Web API 2 + EF6 + web frontend (for the course requirement)
+ └─ docs/            PRD and development guide
 ```
+
+> **Two backends, pick one:** `backend/` is the modern **.NET 8** project (VS 2022 / VS Code).
+> `legacy-vs2015/` is a **Visual Studio 2015-compatible** version (ASP.NET Web API 2 + EF6)
+> for the course/assignment that requires VS 2015 — see [legacy-vs2015/README.md](legacy-vs2015/README.md).
 
 ## Tech Stack
 - **Backend:** ASP.NET Core (C#, .NET 8 LTS) Web API
